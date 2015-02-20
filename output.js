@@ -1,0 +1,1 @@
+console.log(function(){ return 4+function(){ return 5*function(){ return 100*20;}();}();}())

@@ -10,7 +10,10 @@ Set.prototype.get = function(idx){
 Set.prototype.append = function(set){
 	return new Set(this.data.concat(set.data));
 };
+Set.prototype.add = function(item){
+	this.data.push(item);
+};
 
 module.exports = {
-	Set: Set
+	Set: Set,
 }

@@ -1,0 +1,14 @@
+{
+  "name": "jedLang",
+  "version": "1.0.0",
+  "description": "Just my first language",
+  "main": "parse.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "James H Edwards",
+  "license": "ISC",
+  "dependencies": {
+    "commander": "^2.6.0"
+  }
+}

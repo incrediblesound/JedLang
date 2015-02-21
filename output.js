@@ -1,1 +1,1 @@
-console.log(function(){ return 4+function(){ return 5*function(){ return 100*20;}();}();}())
+var sys = require("./func.js").sys;;;;;;sys.print(sys.append(sys.div(sys.add(1,sys.add(2,sys.add(3,sys.add(4,0)))),sys.add(1,sys.add(1,sys.add(1,sys.add(1,0))))),sys.append(sys.add(1,sys.add(2,sys.add(3,sys.add(4,0)))),[1,2,3,4])));

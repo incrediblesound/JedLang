@@ -19,40 +19,39 @@ struct Array {
 	int len;
 };
 
-struct Bool {
-	char value[5];
-};
 
 // BOOLEANS
 
-int showBool(struct Bool b){
+int showBool(char b){
+	int val = strcmp(b, 't');
+	if(strcmp(b, ))
 	printf("%s\n", b.value);
 	return 0;
 };
 
 struct Bool greater(int a, int b){
-	struct Bool result;
+	char result;
 	if(a > b){
-		strcpy(result.value, TRUTHY);
+		result = 't'
 	} else {
-		strcpy(result.value, FALSY);
+		result = 'f'
 	}
 	return result;
 };
 
 struct Bool less(int a, int b){
-	struct Bool result;
+	char result;
 	if(a < b){
-		strcpy(result.value, TRUTHY);
+		result = 't'
 	} else {
-		strcpy(result.value, FALSY);
+		result = 'f'
 	}
 	return result;
 };
 
-int condition(struct Bool cond, int a, int b){
+int condition(char boolean, int a, int b){
 	int result;
-	int compare = strcmp(cond.value, "True");
+	int compare = strcmp(boolean, "t");
 	if(compare == 0){
 		result = a;
 	} else {

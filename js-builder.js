@@ -2,6 +2,7 @@ var fs = require('fs');
 var sys = require('./func.js');
 var Set = require('./set.js').Set;
 var Tree = require('./tree.js').Tree;
+var exec = require('child_process').exec;
 
 var functions = {};
 functions.Tree = Tree;
@@ -26,13 +27,12 @@ var variables = {
 	}
 };
 
-module.exports = function(stack){
+module.exports = function(stack, name){
 	var command;
 	var result = '';
 	createFuncDefs(stack);
 	stack = replaceCustomFuncs(stack);
 	identifyPrintFuncs(stack);
-	console.log(stack[1]);
 	while(stack.length){
 		command = stack.shift();
 		result = buildFunctions(command, result);
@@ -40,7 +40,11 @@ module.exports = function(stack){
 	};
 	result = '#include \"base.h\"\n\nint main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
-	return;
+	console.log(name);
+	exec('gcc output.c -o '+name+'.out', function(){
+		exec('rm -rf output.c');
+		return;
+	});
 };
 
 

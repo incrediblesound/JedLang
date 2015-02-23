@@ -6,7 +6,7 @@ var program = require('commander')
 var state = require('./state.js');
 
 program.parse(process.argv);
-var body = fs.readFileSync('./'+program.args[0]).toString();
+var body = fs.readFileSync('./'+program.args[0]+'.jhe').toString();
 state.body = body;
 
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
@@ -102,4 +102,6 @@ while(state.i < l) {
 	}
 	state.incr();
 }
-builder(stack);
+var fileName = program.args[0].split('/');
+fileName = fileName[fileName.length-1];
+builder(stack, fileName);

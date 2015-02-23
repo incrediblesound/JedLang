@@ -8,6 +8,8 @@ module.exports = {
 		'>i': ['showInt(','integer'],
 		'>a': ['showArray(','array'],	
 		'^': ['append(','array'],
-		'_': ['first(','array']
+		'_': ['first(','array'],
+		'>': ['greater(','string'],
+		'<': ['less(','string']
 	}
 };

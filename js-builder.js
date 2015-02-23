@@ -40,7 +40,6 @@ module.exports = function(stack, name){
 	};
 	result = '#include \"base.h\"\n\nint main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
-	console.log(name);
 	exec('gcc output.c -o '+name+'.out', function(){
 		exec('rm -rf output.c');
 		return;
@@ -156,14 +155,14 @@ var replaceCustomFuncs = function replaceCustomFuncs(stack){
 
 function identifyPrintFuncs(stack){
 	for(var i = 0; i < stack.length; i++){
-		if(stack[i].data.value === '>'){
+		if(stack[i].data.value === '@'){
 			changePrintFunc(stack[i]);
 		}
 		descend(stack[i]);
 	}
 	function descend(tree){
 		for(var k = 0; k < tree.children.length; k++){
-			if(tree.children[k].data.value === '>'){
+			if(tree.children[k].data.value === '@'){
 				changePrintFunc(tree.children[k]);
 			}
 			if(tree.children[k].length){
@@ -179,7 +178,7 @@ function changePrintFunc(tree, root){
 	for(var k = 0; k < tree.children.length; k++){
 		if(tree.children[k].data.type === 'function'){
 			type = sys.map[tree.children[k].data.value][1];
-			if(root.data.value === '>'){
+			if(root.data.value === '@'){
 				if(type === 'integer'){
 					root.data.value = '>i';
 				}
@@ -198,7 +197,7 @@ function changePrintFunc(tree, root){
 		else if(tree.children[k].data.type === 'array'){
 			root.data.value = '>a';
 		}
-		if(tree.children[k].length && root.data.value === '>'){
+		if(tree.children[k].length && root.data.value === '@'){
 			changePrintFunc(tree.children[k], root);
 		}
 	}

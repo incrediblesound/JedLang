@@ -5,4 +5,4 @@
 (def tot X (^ sum X))
 (def all X (^ avg tot))
 
-(> (all [1,2,3,4]))
+(@ (all [1,2,3,4]))

@@ -1,4 +1,8 @@
 #include <stdio.h>
+#include <string.h>
+
+const TRUE = "True";
+const FALSE = "False";
 
 int add(int, int);
 int sub(int, int);
@@ -7,11 +11,41 @@ int div(int, int);
 int showInt(int);
 int showChar(char*);
 struct Array append(int, struct Array);
+struct Bool greater(int, int);
+struct Bool less(int, int);
 
 struct Array {
 	int *body;
 	int len;
 };
+
+struct Bool {
+	char[5] value;
+};
+
+// BOOLEANS
+
+struct Bool greater(int a, int b){
+	struct Bool result;
+	if(a > b){
+		strcpy(result.value, TRUE);
+	} else {
+		strcpy(result.value, FALSE);
+	}
+	return result;
+}
+
+struct Bool less(int a, int b){
+	struct Bool result;
+	if(a < b){
+		strcpy(result.value, TRUE);
+	} else {
+		strcpy(result.value, FALSE);
+	}
+	return result;
+}
+
+// MATH
 
 int add(int x, int y){
 	int r;
@@ -41,6 +75,8 @@ int showInt(int n){
 	printf("%d\n", n);
 	return 0;
 };
+
+// ARRAYS
 
 int showArray(struct Array a){
 	printf("[");

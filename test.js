@@ -1,1 +1,0 @@
-console.log(function(){return 3+function(){ return 1 + 1}()}());

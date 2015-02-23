@@ -3,9 +3,11 @@ var Tree = require('./tree.js').Tree;
 var Set = require('./set.js').Set;
 var builder = require('./js-builder.js');
 var program = require('commander')
+var state = require('./state.js');
 
 program.parse(process.argv);
 var body = fs.readFileSync('./'+program.args[0]).toString();
+state.body = body;
 
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
@@ -16,97 +18,6 @@ custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
 var stack = [];
-
-var state = {
-	scope: null,
-	i: 0,
-	body: body,
-	advance: function(num){
-		this.i += num;
-		return this.idx();
-	},
-	chunk: function(ahead){
-		return this.body.slice(this.i, this.i+ahead);
-	},
-	decr: function(){
-		this.i -= 1;
-	},
-	get_list: function(){
-		this.incr();
-		var content = '';
-		while(this.idx() !== ']'){
-			content += this.idx();
-			this.incr();
-		}
-		return content.split(',');
-	},
-	get_text: function(){
-		this.incr();
-		var result = "";
-		while(this.idx() !== '"'){
-			result += this.idx();
-			this.incr();
-		}
-		return '\"'+result+'\"';
-	},
-	incr: function(){
-		this.i += 1;
-	},
-	idx: function(){
-		return this.body[this.i];
-	},
-	take: function(num){
-		var temp = this.i;
-		this.i += num;
-		return this.body.slice(temp, this.i);
-	},
-	take_name: function(){
-		var name = '';
-		this.next();
-		while(letters.contains(this.idx())){
-			name += this.idx();
-			this.incr();
-		}
-		return name;
-	},
-	next: function(){
-		while(this.idx() === ' '){
-			this.incr();
-		}
-		return this.idx();
-	},
-	take_next: function(){
-		var name = '';
-		this.next();
-		while(anyChar.contains(this.idx()) && this.idx() !== ')'){
-			name += this.idx();
-			this.incr();
-		}
-		return name;
-	},
-	next_word: function(){
-		var name = '';
-		var k = this.i;
-		while(letters.contains(this.body[k])){
-			name += this.body[k];
-			++k;
-		}
-		return name;
-	},
-	take_func: function(){
-		this.next();
-		var name = "";
-		while(this.idx() !== ')'){
-			name += this.idx();
-			this.incr();
-		}
-		if(this.idx() === ')'){
-			name += this.idx();
-			this.incr();
-			return name;
-		}
-	}
-};
 
 var l = body.length,
     current,
@@ -145,13 +56,13 @@ while(state.i < l) {
 		else if(current === '"'){
 			var text = state.get_text();
 			valNode = state.scope.insert();
-			valNode.set('type','value');
+			valNode.set('type','string');
 			valNode.set('value', text);
 		}
 		else if(current === '['){
 			var list = state.get_list();
 			valNode = state.scope.insert();
-			valNode.set('type','value');
+			valNode.set('type','array');
 			valNode.set('value', list);			
 		}
 		else if(current === ')'){
@@ -192,19 +103,3 @@ while(state.i < l) {
 	state.incr();
 }
 builder(stack);
-
-function incr_i(state){
-	while(state.body[state.i] === ' '){
-		++state.i;
-	}
-	return state;
-}
-
-function getNumber(string, idx){
-	var result = '';
-	while(numbers.contains(string[idx])){
-		result = result + string[idx];
-		++idx;
-	}
-	return {result: result, index: idx};
-}

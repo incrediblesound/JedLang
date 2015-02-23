@@ -13,6 +13,10 @@ Set.prototype.append = function(set){
 Set.prototype.add = function(item){
 	this.data.push(item);
 };
+Set.prototype.rnd = function(){
+	var index = Math.round(Math.random()*this.data.length);
+	return this.get(index);
+}
 
 module.exports = {
 	Set: Set,

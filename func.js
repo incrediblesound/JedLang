@@ -1,12 +1,14 @@
 module.exports = {
 	map: {
-		'+': 'sys.add(',
-		'-': 'sys.sub(',
-		'*': 'sys.mult(',
-		'/': 'sys.div(',
-		'>': 'sys.print(',
-		'^': 'sys.append(',
-		'_': 'sys.first('
+		'+': ['add(', 'integer'],
+		'-': ['sub(', 'integer'],
+		'*': ['mult(', 'integer'],
+		'/': ['div(', 'integer'],
+		'>c': ['showChar(','string'],
+		'>i': ['showInt(','integer'],
+		'>a': ['showArray(','array'],	
+		'^': ['append(','array'],
+		'_': ['first(','array']
 	},
 	sys: {
 		add: function(x, y){ return x + y;},

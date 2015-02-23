@@ -23,11 +23,15 @@ Functions
 
 Define a function of def. The def command goes like this:
 
-(def <name> <argument> <function body>)    
+```shell
+(def <name> <argument> <function body>)
+```
 
 There is another kind of def that uses some core functions, for now there is only reduce, and it is called EACH... for now. It is used like this:
 
+```shell
 (def <name> EACH <iterator> NULL <value>)
+```
 
 The iterator will be used recursively on the contents of the list The iterator function takes a single value, either a placeholder for the value of the list or a numeric value. This iterator: (+ e) means add the next value of the list to the sum, while this one: (+ 1) means add one to the sum. NULL is what you give the function that takes the last index.
 

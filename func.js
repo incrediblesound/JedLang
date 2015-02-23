@@ -6,10 +6,12 @@ module.exports = {
 		'/': ['div(', 'integer'],
 		'>c': ['showChar(','string'],
 		'>i': ['showInt(','integer'],
-		'>a': ['showArray(','array'],	
+		'>a': ['showArray(','array'],
+		'>b': ['showBool(','boolean'],
 		'^': ['append(','array'],
 		'_': ['first(','array'],
-		'>': ['greater(','string'],
-		'<': ['less(','string']
+		'>': ['greater(','boolean'],
+		'<': ['less(','boolean'],
+		'?': ['condition(', 'integer']
 	}
 };

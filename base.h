@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
-const TRUE = "True";
-const FALSE = "False";
+#define TRUTHY "True"
+#define FALSY "False"
 
 int add(int, int);
 int sub(int, int);
@@ -20,27 +20,43 @@ struct Array {
 };
 
 struct Bool {
-	char[5] value;
+	char value[5];
 };
 
 // BOOLEANS
 
+int showBool(struct Bool b){
+	printf("%s\n", b.value);
+	return 0;
+};
+
 struct Bool greater(int a, int b){
 	struct Bool result;
 	if(a > b){
-		strcpy(result.value, TRUE);
+		strcpy(result.value, TRUTHY);
 	} else {
-		strcpy(result.value, FALSE);
+		strcpy(result.value, FALSY);
 	}
 	return result;
-}
+};
 
 struct Bool less(int a, int b){
 	struct Bool result;
 	if(a < b){
-		strcpy(result.value, TRUE);
+		strcpy(result.value, TRUTHY);
 	} else {
-		strcpy(result.value, FALSE);
+		strcpy(result.value, FALSY);
+	}
+	return result;
+};
+
+int condition(struct Bool cond, int a, int b){
+	int result;
+	int compare = strcmp(cond.value, "True");
+	if(compare == 0){
+		result = a;
+	} else {
+		result = b;
 	}
 	return result;
 }
@@ -101,9 +117,9 @@ struct Array append(int num, struct Array a){
 		}
 	}
 	return a;
-}
+};
 
 int showChar(char *h){
 	printf("%s\n", h);
 	return 0;
-}
+};

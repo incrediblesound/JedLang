@@ -133,8 +133,8 @@ var replaceCustomFuncs = function replaceCustomFuncs(stack){
 			stack[i] = functions[stack[i].data.value](stack[i]);
 		} 
 		if(stack[i].children.length){
-			for(var i = 0, l = stack[i].children.length; i < l; i++){
-				stack[i].children[i] = recurse(stack[i].children[i]);
+			for(var k = 0, l = stack[i].children.length; k < l; k++){
+				stack[i].children[k] = recurse(stack[i].children[k]);
 			}
 		}
 	}
@@ -187,6 +187,9 @@ function changePrintFunc(tree, root){
 				}
 				else if(type === 'string'){
 					root.data.value = '>c';
+				}
+				else if(type === 'boolean'){
+					root.data.value = '>b';
 				}
 			}
 			return;

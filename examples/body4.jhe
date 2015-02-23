@@ -1,1 +1,5 @@
-(@ (> 3 1))
+(def sum EACH (+ e) NULL 0)
+(def len EACH (+ 1) NULL 0)
+(def avg X (/ sum len))
+
+(@ (? (> (avg [1,2,3,4]) 1) 10 0))

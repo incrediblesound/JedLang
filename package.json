@@ -1,13 +1,13 @@
 {
-  "name": "jedLang",
+  "name": "JedLang",
   "version": "1.0.0",
-  "description": "Just my first language",
+  "description": "A pretty cool language, huh?",
   "main": "parse.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": ""
   },
   "author": "James H Edwards",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
     "commander": "^2.6.0"
   }

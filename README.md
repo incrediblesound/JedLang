@@ -1,9 +1,9 @@
-jedLang
+JedLang
 =======
 
 JedLang is a non-human-readable, non-expressive, functional language that compiles to C. It's kinda like lisp, and it is very concise because I like brevity and it's my language so there.
 
-lispy math
+Lispy Math
 ----------
 ```shell
 (+ 3 2)

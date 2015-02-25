@@ -14,7 +14,7 @@ Set.prototype.add = function(item){
 	this.data.push(item);
 };
 Set.prototype.rnd = function(){
-	var index = Math.round(Math.random()*this.data.length);
+	var index = Math.floor(Math.random()*this.data.length);
 	return this.get(index);
 }
 

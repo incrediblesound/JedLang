@@ -3,6 +3,8 @@ var sys = require('./func.js');
 var Set = require('./set.js').Set;
 var Tree = require('./tree.js').Tree;
 var exec = require('child_process').exec;
+var stateFactory = require('./state.js');
+var parser = require('./parser_module.js');
 
 var functions = {};
 functions.Tree = Tree;
@@ -41,7 +43,7 @@ module.exports = function(stack, name){
 	result = '#include \"base.h\"\n\nint main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(){
-		exec('rm -rf output.c');
+		// exec('rm -rf output.c');
 		return;
 	});
 };
@@ -60,7 +62,7 @@ function buildFunctions(tree, result){
 		result = newStruct + result;
 		result += structName;
 	}
-	else if(tree.data.type === 'function'){
+	else if(tree.data.type === 'function' && tree.data.value !== '?'){
 		result += sys.map[tree.data.value][0];
 		for(var i = 0; i < tree.children.length; i++){
 			result = buildFunctions(tree.children[i], result);
@@ -70,15 +72,27 @@ function buildFunctions(tree, result){
 		}
 		result += ')';
 	}
+	else if(tree.data.value === '?'){
+		var charname = variables.newVariable();
+		var compare_result = variables.newVariable();
+		var conditional = tree.children[0];
+		var head = 'char '+charname+' = '+buildFunctions(conditional, '')+';';
+		head += 'int '+compare_result+' = istrue('+charname+');';
+
+		var tail = 'if('+compare_result+' != 0){';
+		tail += buildFunctions(tree.children[1], '')+';} else {';
+		tail += buildFunctions(tree.children[2],'')+';}';
+		result = head + result + tail;
+	}
 	return result;
 };
 
 function createFuncDefs(stack){
-	while(stack[0].data.type === 'funcdef'){
+	while(stack.length && stack[0].data.type === 'funcdef'){
 		var tree = stack.shift();
-		var funcData = tree.data.iterator.replace(/\(|\)/g,'').split(' ');
-		var funcName = funcData[0];
 		if(tree.data.action === 'EACH'){
+			var funcData = tree.data.iterator.replace(/\(|\)/g,'').split(' ');
+			var funcName = funcData[0];
 			var funcElement = funcData[1];
 			body  = 'root = root.children[0];var mainTree = new this.Tree();';
 			body += 'var tree = mainTree;';
@@ -96,35 +110,43 @@ function createFuncDefs(stack){
 			var func = new Function('root',body);
 			functions[tree.data.name] = func;
 		} else {
-			funcData.shift();
-			var args = funcData;
-			body  = 'var mainTree = new this.Tree();';
-			body += 'var tree = mainTree;';
-			body += 'tree.set("type", "function"); tree.set("value","'+funcName+'");';
-			var placeholders = 0;
-			for(var i = 0; i < args.length; i++){
-				if(functions[args[i]] !== undefined){
-					body += 'var child = tree.insert();';
-					body += 'child.set("type","custom");child.set("value","'+args[i]+'");';
-					body += 'child = child.insert();';
-					body += 'if(Array.isArray(root.children[0].data.value)){child.set("type","array");}else';
-					body += '{child.set("type","value")}'
-					body += 'child.set("value",root.children[0].data.value);';
-				}
-				else if(LETTERS.contains(args[i])){
-					body += 'var child = tree.insert();'
-					body += 'if(Array.isArray(root.children['+placeholders+'].data.value)){child.set("type","array");}else';
-					body += '{child.set("type", "value");}'
-					body += 'child.set("value",root.children['+placeholders+'].data.value);';
-					placeholders++;
-				}
-			}
-			body += 'return mainTree';
-			var func = new Function('root',body);
-			functions[tree.data.name] = func;
+			var state = stateFactory();
+			state.body = tree.data.iterator;
+			var result = parser(state, [])[0];
+			functions[tree.data.name] = fillVariables(result);
 		}
 	}
 	return;
+};
+
+var fillVariables = function(tree){
+	return function(root){
+		var args = root.children;
+		recurse(tree);
+		return tree;
+
+		function recurse(tree){
+			if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
+				if(tree.data.value === 'X'){
+					tree.data.value = root.children[0].data.value;
+					tree.data.type = root.children[0].data.type;
+				}
+				if(tree.data.value === 'Y'){
+					tree.data.value = root.children[1].data.value;
+					tree.data.type = root.children[1].data.type;
+				}
+				if(tree.data.value === 'Z'){
+					tree.data.value = root.children[2].data.value;
+					tree.data.type = root.children[2].data.type;
+				}
+			}
+			if(tree.children.length){
+				for(var i = 0, l = tree.children.length; i < l; i++){
+					recurse(tree.children[i]);
+				}
+			}
+		};
+	}
 };
 
 var replaceCustomFuncs = function replaceCustomFuncs(stack){

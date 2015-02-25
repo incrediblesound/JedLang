@@ -1,13 +1,5 @@
-var fs = require('fs');
 var Tree = require('./tree.js').Tree;
 var Set = require('./set.js').Set;
-var builder = require('./js-builder.js');
-var program = require('commander')
-var state = require('./state.js')();
-
-program.parse(process.argv);
-var body = fs.readFileSync('./'+program.args[0]+'.jhe').toString();
-state.body = body;
 
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
@@ -17,19 +9,8 @@ patterns = new Set(['(',')','[',']','"']);
 custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
-var stack = [];
-
-var l = body.length,
-    current,
-    valNode;
-
-var fileName = program.args[0].split('/');
-fileName = fileName[fileName.length-1];
-var stack = parser(state, stack);
-builder(stack, fileName);
-
-function parser(state, stack){
-	while(state.i < l) {
+module.exports = function(state, stack){
+	while(state.i < state.body.length) {
 		current = state.next();
 		if(anyChar.contains(current)){
 			if(current === '(' && state.chunk(4) !== '(def'){
@@ -48,6 +29,12 @@ function parser(state, stack){
 				state.advance(name.length);
 				state.scope.set('type','custom');
 				state.scope.set('value', name);
+			}
+			else if(LETTERS.contains(current)){
+				var val = state.idx();
+				valNode = state.scope.insert();
+				valNode.set('type','value');
+				valNode.set('value', val);
 			}
 			else if(numbers.contains(current)){
 				var num = '';

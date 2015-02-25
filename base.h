@@ -11,8 +11,8 @@ int div(int, int);
 int showInt(int);
 int showChar(char*);
 struct Array append(int, struct Array);
-struct Bool greater(int, int);
-struct Bool less(int, int);
+char greater(int, int);
+char less(int, int);
 
 struct Array {
 	int *body;
@@ -23,35 +23,46 @@ struct Array {
 // BOOLEANS
 
 int showBool(char b){
-	int val = strcmp(b, 't');
-	if(strcmp(b, ))
-	printf("%s\n", b.value);
+	char tc = 't';
+	int val = strcmp(&b, &tc);
+	val == 0 ? printf("%s\n", TRUTHY) : printf("%s\n", FALSY);
 	return 0;
 };
 
-struct Bool greater(int a, int b){
-	char result;
-	if(a > b){
-		result = 't'
+int istrue(char c){
+	char tc = 't';
+	int result;
+	if(c == tc){
+		result = 1;
 	} else {
-		result = 'f'
+		result = 0;
 	}
 	return result;
 };
 
-struct Bool less(int a, int b){
+char greater(int a, int b){
+	char result;
+	if(a > b){
+		result = 't';
+	} else {
+		result = 'f';
+	}
+	return result;
+};
+
+char less(int a, int b){
 	char result;
 	if(a < b){
-		result = 't'
+		result = 't';
 	} else {
-		result = 'f'
+		result = 'f';
 	}
 	return result;
 };
 
 int condition(char boolean, int a, int b){
 	int result;
-	int compare = strcmp(boolean, "t");
+	int compare = strcmp(&boolean, "t");
 	if(compare == 0){
 		result = a;
 	} else {

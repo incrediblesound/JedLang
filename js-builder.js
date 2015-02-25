@@ -29,6 +29,7 @@ var variables = {
 	}
 };
 
+PRE_MAIN = '';
 module.exports = function(stack, name){
 	var command;
 	var result = '';
@@ -40,7 +41,7 @@ module.exports = function(stack, name){
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	result = '#include \"base.h\"\n\nint main(){'+ result + '};';
+	result = '#include \"base.h\"\n\n'+PRE_MAIN+'int main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(){
 		// exec('rm -rf output.c');
@@ -73,16 +74,18 @@ function buildFunctions(tree, result){
 		result += ')';
 	}
 	else if(tree.data.value === '?'){
-		var charname = variables.newVariable();
-		var compare_result = variables.newVariable();
-		var conditional = tree.children[0];
-		var head = 'char '+charname+' = '+buildFunctions(conditional, '')+';';
-		head += 'int '+compare_result+' = istrue('+charname+');';
-
-		var tail = 'if('+compare_result+' != 0){';
-		tail += buildFunctions(tree.children[1], '')+';} else {';
-		tail += buildFunctions(tree.children[2],'')+';}';
-		result = head + result + tail;
+		var arg_one = tree.children[1], arg_two = tree.children[2];
+		var condition = tree.children[0];
+		var arg_one_name = variables.newVariable(), arg_two_name = variables.newVariable();
+		var wrapper_name = variables.newVariable();
+		var arg_one_type = returnType(arg_one), arg_two_type = returnType(arg_two);
+		var head = ''+arg_one_type+' '+arg_one_name+'(){'+arg_one_type+' '+arg_one_name+' = '+buildFunctions(arg_one,'')+'; return '+arg_one_name+';};';
+		head += arg_two_type+' '+arg_two_name+'(){'+arg_two_type+' '+arg_two_name+' = '+buildFunctions(arg_two,'')+'; return '+arg_two_name+';};';
+		head += arg_one_type+' '+wrapper_name+'(){ int truthval = istrue('+buildFunctions(condition,'')+');'+
+		arg_one_type+' result;'+'if(truthval){ result = '+arg_one_name+'();}else{ result='+arg_two_name+'();} return result;};';
+		tail = ''+wrapper_name+'()';
+		PRE_MAIN = PRE_MAIN + head;
+		result = result+tail;
 	}
 	return result;
 };
@@ -225,5 +228,36 @@ function changePrintFunc(tree, root){
 		if(tree.children[k].length && root.data.value === '@'){
 			changePrintFunc(tree.children[k], root);
 		}
+	}
+};
+
+function returnType(tree) {
+	var type;
+	if(tree.data.type === 'function'){
+		type = sys.map[tree.data.value][1];
+		if(type === 'integer'){
+			return 'int';
+		}
+		else if(type === 'array'){
+			return 'int *';
+		}
+		else if(type === 'string'){
+			return 'char *';
+		}
+		else if(type === 'boolean'){
+			return 'char';
+		}
+	}
+	else if(tree.data.type === 'value'){
+		return 'int';
+	}
+	else if(tree.data.type === 'string'){
+		return 'char *';
+	}
+	else if(tree.data.type === 'array'){
+		return 'int *';
+	}
+	else if(tree.data.type === 'custom'){
+		return returnType(tree.children[0]);
 	}
 };

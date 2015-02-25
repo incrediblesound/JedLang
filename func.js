@@ -4,14 +4,14 @@ module.exports = {
 		'-': ['sub(', 'integer'],
 		'*': ['mult(', 'integer'],
 		'/': ['div(', 'integer'],
-		'>c': ['showChar(','string'],
+		'>c': ['showChar(','integer'],
 		'>i': ['showInt(','integer'],
-		'>a': ['showArray(','array'],
-		'>b': ['showBool(','boolean'],
+		'>a': ['showArray(','integer'],
+		'>b': ['showBool(','integer'],
 		'^': ['append(','array'],
 		'_': ['first(','array'],
 		'>': ['greater(','boolean'],
 		'<': ['less(','boolean'],
-		'?': ['condition(', 'integer']
+		'?': ['condition(', 'variable']
 	}
 };

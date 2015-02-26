@@ -46,7 +46,7 @@ module.exports = function(stack, name, funcdefs){
 	result = '#include \"base.h\"\n\n'+PRE_MAIN+'int main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(){
-		// exec('rm -rf output.c');
+		exec('rm -rf output.c');
 		return;
 	});
 };
@@ -208,7 +208,6 @@ function changePrintFunc(tree, root, startIdx){
 	var type;
 	for(var k = startIdx; k < tree.children.length; k++){
 		if(tree.children[k].data.type === 'function'){
-			console.log('value: ', tree.children[k].data.value);
 			type = sys.map[tree.children[k].data.value][1];
 			if(root.data.value === '@'){
 				if(type === 'integer'){

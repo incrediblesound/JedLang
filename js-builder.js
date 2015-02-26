@@ -46,7 +46,7 @@ module.exports = function(stack, name, funcdefs){
 	result = '#include \"base.h\"\n\n'+PRE_MAIN+'int main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(){
-		exec('rm -rf output.c');
+		// exec('rm -rf output.c');
 		return;
 	});
 };
@@ -134,14 +134,17 @@ var fillVariables = function(tree){
 				if(tree.data.value === 'X'){
 					tree.data.value = root.children[0].data.value;
 					tree.data.type = root.children[0].data.type;
+					tree.children = root.children[0].children;
 				}
 				if(tree.data.value === 'Y'){
 					tree.data.value = root.children[1].data.value;
 					tree.data.type = root.children[1].data.type;
+					tree.children = root.children[1].children;
 				}
 				if(tree.data.value === 'Z'){
 					tree.data.value = root.children[2].data.value;
 					tree.data.type = root.children[2].data.type;
+					tree.children = root.children[2].children;
 				}
 			}
 			if(tree.children.length){
@@ -205,6 +208,7 @@ function changePrintFunc(tree, root, startIdx){
 	var type;
 	for(var k = startIdx; k < tree.children.length; k++){
 		if(tree.children[k].data.type === 'function'){
+			console.log('value: ', tree.children[k].data.value);
 			type = sys.map[tree.children[k].data.value][1];
 			if(root.data.value === '@'){
 				if(type === 'integer'){

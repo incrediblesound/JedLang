@@ -21,21 +21,21 @@ Output
 Functions
 ---------
 
-Define a function of def. The def command goes like this:
+Define a function with def. The def command goes like this:
 
 ```shell
-(def <name> <argument> <function body>)
+(def <name> <arguments> <function body>)
 ```
-
-There is another kind of def that uses some core functions, for now there is only reduce, and it is called EACH... for now. It is used like this:
+Make sure to use X Y or Z for you argument names, they correspond to the first, second and third arguments of a function invocation.    
+There is another kind of def that use core functions, for now there is only reduce, and it is called EACH... it is used like this:
 
 ```shell
 (def <name> EACH <iterator> NULL <value>)
 ```
 
-The iterator will be used recursively on the contents of the list The iterator function takes a single value, either a placeholder for the value of the list or a numeric value. This iterator: (+ e) means add the next value of the list to the sum, while this one: (+ 1) means add one to the sum. NULL is what you give the function that takes the last index.
+The iterator will be used recursively on the contents of the list. The iterator function takes a single value, either a placeholder for the current value of the list or a numeric value. This iterator: (+ e) means add the next value of the list to the sum, while this one: (+ 1) means add one to the sum. NULL is what you give the function that takes the last index.
 
-Here are lots of examples:
+Here are some of examples:
 
 ```shell
 (def sum EACH (+ e) NULL 0)
@@ -63,10 +63,16 @@ Of course there are booleans:
 (@ (> 4 3)) //=> True
 (@ (< 1 0)) //=> False
 ```
-And a conditional function:
+And a conditional function that works like this:
 ```shell
+(? <boolean func> <return if true> <return if false>)
+
 (@ (? (> (avg [1,2,3,4]) 1) 10 0)) //=> 10
+
+(def wow X Y (? (> X Y) (@ "wham") (@ "whoozle")))
+(wow 4 3) //=> "wham"
 ```
+The conditional function can take function arguments, as in the two print functions above, but the two return values have to be of the same type, so no funny stuff ya' hear?
 
 USE
 ---
@@ -76,4 +82,7 @@ Write a JedLang file and name it anything but give it a .jhe extension. To compi
 ```shell
 node parser.js <path/to/filename>
 ./<filename>.out
+
+node parser.js mycode
+./mycode.out //=> stuff happens
 ```

@@ -9,7 +9,10 @@ patterns = new Set(['(',')','[',']','"']);
 custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
-module.exports = function(state, stack){
+module.exports = function(state, stack, defs){
+
+	//have to import custom function names from initial parsing step
+	custom.setData(defs);
 	while(state.i < state.body.length) {
 		current = state.next();
 		if(anyChar.contains(current)){
@@ -26,7 +29,7 @@ module.exports = function(state, stack){
 			}
 			else if(custom.contains(state.next_word())){
 				var name = state.next_word();
-				state.advance(name.length);
+				state.advance(name.length-1);
 				state.scope.set('type','custom');
 				state.scope.set('value', name);
 			}

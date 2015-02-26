@@ -30,7 +30,9 @@ var variables = {
 };
 
 PRE_MAIN = '';
-module.exports = function(stack, name){
+DEFS = null;
+module.exports = function(stack, name, funcdefs){
+	DEFS = funcdefs;
 	var command;
 	var result = '';
 	createFuncDefs(stack);
@@ -44,7 +46,7 @@ module.exports = function(stack, name){
 	result = '#include \"base.h\"\n\n'+PRE_MAIN+'int main(){'+ result + '};';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(){
-		// exec('rm -rf output.c');
+		exec('rm -rf output.c');
 		return;
 	});
 };
@@ -115,8 +117,8 @@ function createFuncDefs(stack){
 		} else {
 			var state = stateFactory();
 			state.body = tree.data.iterator;
-			var result = parser(state, [])[0];
-			functions[tree.data.name] = fillVariables(result);
+			var result = parser(state, [], DEFS);
+			functions[tree.data.name] = fillVariables(result[0]);
 		}
 	}
 	return;
@@ -127,7 +129,6 @@ var fillVariables = function(tree){
 		var args = root.children;
 		recurse(tree);
 		return tree;
-
 		function recurse(tree){
 			if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
 				if(tree.data.value === 'X'){
@@ -153,6 +154,7 @@ var fillVariables = function(tree){
 };
 
 var replaceCustomFuncs = function replaceCustomFuncs(stack){
+	var temp;
 	for(var i = 0; i < stack.length; i++){
 		if(stack[i].data.type === 'custom'){
 			stack[i] = functions[stack[i].data.value](stack[i]);
@@ -171,7 +173,7 @@ var replaceCustomFuncs = function replaceCustomFuncs(stack){
 		}
 		if(tree.children.length){
 			for(var i = 0, l = tree.children.length; i < l; i++){
-				tree.children[i] = recurse(tree.children[i]);
+				tree.children[i] = recurse(tree.children[i], root);
 			}
 		}
 		return tree;
@@ -197,10 +199,11 @@ function identifyPrintFuncs(stack){
 	}
 };
 
-function changePrintFunc(tree, root){
+function changePrintFunc(tree, root, startIdx){
+	startIdx = startIdx || 0;
 	root = root || tree;
 	var type;
-	for(var k = 0; k < tree.children.length; k++){
+	for(var k = startIdx; k < tree.children.length; k++){
 		if(tree.children[k].data.type === 'function'){
 			type = sys.map[tree.children[k].data.value][1];
 			if(root.data.value === '@'){
@@ -216,11 +219,16 @@ function changePrintFunc(tree, root){
 				else if(type === 'boolean'){
 					root.data.value = '>b';
 				}
+				else if(type === 'variable'){
+					return changePrintFunc(tree.children[k], root, 1);
+				}
 			}
-			return;
 		} 
 		else if(tree.children[k].data.type === 'string'){
 			root.data.value = '>c';
+		}
+		else if(tree.children[k].data.type === 'value'){
+			root.data.value = '>i';
 		}
 		else if(tree.children[k].data.type === 'array'){
 			root.data.value = '>a';

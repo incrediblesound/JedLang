@@ -7,6 +7,9 @@ Set.prototype.contains = function(item){
 Set.prototype.get = function(idx){
 	return this.data[idx];
 };
+Set.prototype.setData = function(array){
+	this.data = array;
+};
 Set.prototype.append = function(set){
 	return new Set(this.data.concat(set.data));
 };

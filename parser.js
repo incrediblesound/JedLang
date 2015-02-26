@@ -26,7 +26,7 @@ var l = body.length,
 var fileName = program.args[0].split('/');
 fileName = fileName[fileName.length-1];
 var stack = parser(state, stack);
-builder(stack, fileName);
+builder(stack, fileName, custom.data);
 
 function parser(state, stack){
 	while(state.i < l) {
@@ -98,7 +98,7 @@ function parser(state, stack){
 						state.next();
 					}
 				} else {
-					defn.set('action', state.take_next());
+					defn.set('arguments', state.take_args());
 					defn.set('iterator', state.take_func());
 					state.next();
 				}

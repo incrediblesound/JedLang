@@ -66,6 +66,17 @@ module.exports = function(){
 			}
 			return name;
 		},
+		take_args: function(){
+			var args = [];
+			this.next();
+			while(LETTERS.contains(this.idx()) || this.idx() === ' '){
+				if(LETTERS.contains(this.idx())){
+					args.push(this.idx());
+				}
+				this.incr();
+			}
+			return args;
+		},
 		next_word: function(){
 			var name = '';
 			var k = this.i;

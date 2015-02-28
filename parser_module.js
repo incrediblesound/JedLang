@@ -39,6 +39,12 @@ module.exports = function(state, stack, defs){
 				valNode.set('type','value');
 				valNode.set('value', val);
 			}
+			else if(letters.contains(current)){
+				var val = state.idx();
+				valNode = state.scope.insert();
+				valNode.set('type','value');
+				valNode.set('value', val);
+			}
 			else if(numbers.contains(current)){
 				var num = '';
 				while(numbers.contains(state.idx())){

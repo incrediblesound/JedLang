@@ -2,7 +2,7 @@ var Set = function(array){
 	this.data = array;	
 };
 Set.prototype.contains = function(item){
-	return this.data.indexOf(item) > -1;
+	return (this.data && this.data.length) ? (this.data.indexOf(item) > -1) : false;
 };
 Set.prototype.get = function(idx){
 	return this.data[idx];

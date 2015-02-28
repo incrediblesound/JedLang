@@ -4,8 +4,8 @@ var Tree = function(parent){
 	this.parent = parent || null;
 }
 
-Tree.prototype.insert = function(){
-	var child = new Tree(this);
+Tree.prototype.insert = function(child){
+	child = child || new Tree(this);
 	this.children.push( child );
 	return child;
 }

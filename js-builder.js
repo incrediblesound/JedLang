@@ -11,8 +11,12 @@ var printTree = require('./printTree.js');
 funcs = new Set(['+','-','*','/','>']);
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
-
-DEFINED = [];
+ARG_IDX = {
+	'X':0,
+	'Y':1,
+	'Z':2
+};
+DEFINED = {};
 CURRENT_TYPE = null;
 
 var variables = {
@@ -37,8 +41,7 @@ module.exports = function(stack, name, funcdefs){
 	var command;
 	var result = '';
 	createFuncDefs(stack);
-	stack = replaceCustomFuncs(stack);
-	identifyPrintFuncs(stack);
+	stack = identifyPrintFuncs(stack);
 	while(stack.length){
 		command = stack.shift();
 		result = buildFunctions(command, result);
@@ -53,7 +56,7 @@ module.exports = function(stack, name, funcdefs){
 };
 
 
-function buildFunctions(tree, result){
+function buildFunctions(tree, result, argNames){
 	if(tree.data.type === 'value' || tree.data.type === 'string'){
 		result += tree.data.value;
 	}
@@ -65,6 +68,16 @@ function buildFunctions(tree, result){
 		newStruct += structName+'.len = '+tree.data.value.length+';';
 		result = newStruct + result;
 		result += structName;
+	}
+	else if(tree.data.type === 'custom'){
+		result += DEFINED[tree.data.value].name+'(';
+		for(var i = 0; i < tree.children.length; i++){
+			result = buildFunctions(tree.children[i], result);
+			if(i !== tree.children.length-1){
+				result += ',';
+			}
+		}
+		result += ')';
 	}
 	else if(tree.data.type === 'function' && tree.data.value !== '?'){
 		result += sys.map[tree.data.value][0];
@@ -79,19 +92,66 @@ function buildFunctions(tree, result){
 	else if(tree.data.value === '?'){
 		var arg_one = tree.children[1], arg_two = tree.children[2];
 		var condition = tree.children[0];
+		var condition_type = returnType(condition);
 		var arg_one_name = variables.newVariable(), arg_two_name = variables.newVariable();
 		var wrapper_name = variables.newVariable();
 		var arg_one_type = returnType(arg_one), arg_two_type = returnType(arg_two);
-		var head = ''+arg_one_type+' '+arg_one_name+'(){'+arg_one_type+' '+arg_one_name+' = '+buildFunctions(arg_one,'')+'; return '+arg_one_name+';};';
-		head += arg_two_type+' '+arg_two_name+'(){'+arg_two_type+' '+arg_two_name+' = '+buildFunctions(arg_two,'')+'; return '+arg_two_name+';};';
-		head += arg_one_type+' '+wrapper_name+'(){ int truthval = istrue('+buildFunctions(condition,'')+');'+
-		arg_one_type+' result;'+'if(truthval){ result = '+arg_one_name+'();}else{ result='+arg_two_name+'();} return result;};';
-		tail = ''+wrapper_name+'()';
+		var argumentOneText = getArguments(arg_one, argNames);
+		var argumentTwoText = getArguments(arg_two, argNames);
+		var conditionText = getArguments(condition, argNames);
+		var head = ''+arg_one_type+' '+arg_one_name+'('+printArguments(argumentOneText, arg_one_type)+'){'+arg_one_type+' '+arg_one_name+' = '+buildFunctions(arg_one,'')+'; return '+arg_one_name+';};';
+		head += arg_two_type+' '+arg_two_name+'('+printArguments(argumentTwoText, arg_one_type)+'){'+arg_two_type+' '+arg_two_name+' = '+buildFunctions(arg_two,'')+'; return '+arg_two_name+';};';
+		head += arg_one_type+' '+wrapper_name+'('+printArguments(conditionText, arg_one_type)+'){ int truthval = istrue('+buildFunctions(condition,'')+');'+
+		arg_one_type+' result;'+'if(truthval){ result = '+arg_one_name+'('+printArguments(argumentOneText)+');}else{ result='+arg_two_name+'('+printArguments(argumentTwoText)+');} return result;};';
+		tail = ''+wrapper_name+'(';
+		if(argNames.length){
+			for(var i = 0; i < argNames.length; i++){
+				tail += argNames[i];
+				if(i !== argNames.length-1){
+					tail += ',';
+				}
+			}
+		}
+		tail += ')';
 		PRE_MAIN = PRE_MAIN + head;
 		result = result+tail;
 	}
 	return result;
 };
+
+function getArguments(tree, argNames){
+	if(argNames === undefined){
+		return [];
+	}
+	var results = [];
+	recurse(tree);
+	return results;
+
+	function recurse(tree){
+		if(argNames.indexOf(tree.data.value) !== -1){
+			results.push(tree.data.value);
+		}
+		if(tree.children.length){
+			for(var i = 0; i < tree.children.length; i++){
+				recurse(tree.children[i]);
+			}
+		}
+	};
+};
+
+function printArguments(arguments, type){
+	if(!arguments.length){
+		return '';
+	}
+	var result = '';
+	for(var i = 0; i < arguments.length; i++){
+		result += (type === undefined ? '' : type+' ') + arguments[i];
+		if(i !== arguments.length-1){
+			result += ',';
+		}
+	}
+	return result;
+}
 
 function createFuncDefs(stack){
 	while(stack.length && stack[0].data.type === 'funcdef'){
@@ -114,8 +174,10 @@ function createFuncDefs(stack){
 		} else {
 			var state = stateFactory();
 			state.body = tree.data.iterator;
-			var result = parser(state, [], DEFS);
-			functions[tree.data.name] = fillVariables(result[0]);
+			var result = parser(state, [], DEFS)[0];
+			result = identifyPrintFuncs(result)[0];
+			var type = returnType(result);
+			writeCustomFuncs(result, type, tree);
 		}
 	}
 	return;
@@ -153,43 +215,65 @@ var fillVariables = function(tree){
 	}
 };
 
-var replaceCustomFuncs = function replaceCustomFuncs(stack){
-	var temp, current;
-	for(var i = 0; i < stack.length; i++){
-		current = stack[i];
-		if(current.data.type === 'custom' && (DEFINED.indexOf(current.data.value) === -1) ){
-			DEFINED.push(current.data.value);
-			stack[i] = functions[current.data.value](current);
-		} 
-		if(current.children.length){
-			for(var k = 0, l = current.children.length; k < l; k++){
-				stack[i].children[k] = recurse(current.children[k]);
+function writeCustomFuncs(tree, type, definition){
+	var args = definition.data.arguments;
+	var name = definition.data.name;
+	var funcBody = '', argNames = [];
+	var funcName = variables.newVariable();
+	funcBody += type+' '+funcName +'(';
+	for(var i = 0; i < args.length; i++){
+		argNames.push(variables.newVariable());
+		funcBody += type +' '+argNames[i];
+		if(i !== args.length-1){
+			funcBody += ', ';
+		} else { funcBody += '){';}
+	}
+	DEFINED[name] = {name: funcName, arguments: argNames};
+	tree = insertVariableNames(tree, argNames);
+	printTree(tree);
+	var result = variables.newVariable();
+	funcBody += type+' '+result+' = '+buildFunctions(tree, '', argNames)+';';
+	funcBody += 'return '+result+';};';
+	var placeholders = ['X','Y','Z'];
+	PRE_MAIN += funcBody;
+	return;
+};
+
+function insertVariableNames(tree, argNames){
+	tree = changeVar(tree);
+	return tree;
+
+	function changeVar(tree){
+		var placeholders = ['X','Y','Z'];
+		if(tree.data.type === 'value'){
+			for(var i = 0; i < placeholders.length; i++){
+				if(tree.data.value === placeholders[i]){
+					tree.data.value = argNames[i];
+				}
 			}
 		}
-	}
-	return stack;
-
-	function recurse(tree){
-		if(tree.data.type === 'custom' && (DEFINED.indexOf(current.data.value) === -1)){
-			DEFINED.push(current.data.value);
-			tree = functions[tree.data.value](tree);
-		}
 		if(tree.children.length){
-			for(var i = 0, l = tree.children.length; i < l; i++){
-				tree.children[i] = recurse(tree.children[i], root);
+			for(var k = 0; k < tree.children.length; k++){
+				changeVar(tree.children[k]);
 			}
 		}
 		return tree;
-	};
+	}
 };
 
 function identifyPrintFuncs(stack){
+	if(!Array.isArray(stack)){
+		stack = [stack];
+	}
 	for(var i = 0; i < stack.length; i++){
 		if(stack[i].data.value === '@'){
 			changePrintFunc(stack[i]);
 		}
 		descend(stack[i]);
 	}
+
+	return stack;
+
 	function descend(tree){
 		for(var k = 0; k < tree.children.length; k++){
 			if(tree.children[k].data.value === '@'){

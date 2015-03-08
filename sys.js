@@ -1,11 +1,17 @@
 function greater(x, y){
 	return x > y;
 };
+
 function less(x, y){
 	return x < y;
 };
+
 function append(el, array){
 	return Array.isArray(el) ? el.concat(array) : [el].concat(array);
+};
+
+function div(x, y){
+	return x/y;
 };
 
 function add(){

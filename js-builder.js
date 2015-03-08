@@ -13,6 +13,13 @@ letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
 
 CURRENT_TYPE = null;
+DEFINED = {};
+
+ARG_MAP = {
+	'X': 0,
+	'Y': 1,
+	'Z': 2
+};
 
 var variables = {
 	vars: {},
@@ -36,29 +43,40 @@ module.exports = function(stack, name, funcdefs){
 	var command;
 	var result = '';
 	createFuncDefs(stack);
-	stack = replaceCustomFuncs(stack);
-	identifyPrintFuncs(stack);
 	while(stack.length){
 		command = stack.shift();
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	fs.readFile('./sys.js', function(buffer){
+	fs.readFile('./sys.js', function(err, buffer){
 		var sys = buffer.toString();
-		fs.writeFileSync(name+'.js', result+buffer);
+		fs.writeFileSync(name+'.js', PRE_MAIN+result+sys);
 	})
 };
 
 
-function buildFunctions(tree, result){
+function buildFunctions(tree, result, argNames){
 	if(tree.data.type === 'value' || tree.data.type === 'string'){
 		result += tree.data.value;
 	}
 	else if(tree.data.type === 'array'){
 		result += tree.data.value;
 	}
+	else if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
+		result += argNames[ARG_MAP[tree.data.value]];
+	}
+	else if(tree.data.type === 'custom' && DEFINED[tree.data.value] !== undefined){
+		result += DEFINED[tree.data.value].name + '(';
+		for(var i = 0; i < tree.children.length; i++){
+			result = buildFunctions(tree.children[i], result);
+			if(i !== tree.children.length-1){
+				result += ',';
+			}
+		}
+		result += ')';
+	}
 	else if(tree.data.type === 'function' && tree.data.value !== '?'){
-		result += sys.map[tree.data.value][0];
+		result += sys.map[tree.data.value];
 		for(var i = 0; i < tree.children.length; i++){
 			result = buildFunctions(tree.children[i], result);
 			if(i !== tree.children.length-1){
@@ -68,15 +86,16 @@ function buildFunctions(tree, result){
 		result += ')';
 	}
 	else if(tree.data.value === '?'){
+		var argsText = (argNames !== undefined) ? argNameText(argNames) : '';
 		var arg_one = tree.children[1], arg_two = tree.children[2];
 		var condition = tree.children[0];
 		var arg_one_name = variables.newVariable(), arg_two_name = variables.newVariable();
 		var wrapper_name = variables.newVariable();
-		var head = 'var '+arg_one_name+'=(){'+arg_one_name+' = '+buildFunctions(arg_one,'')+'; return '+arg_one_name+';};';
-		head += 'var '+arg_two_name+'=(){'+arg_two_name+' = '+buildFunctions(arg_two,'')+'; return '+arg_two_name+';};';
-		head += wrapper_name+'(){ var truthval = istrue('+buildFunctions(condition,'')+');'+
-		'var result;'+'if(truthval){ result = '+arg_one_name+'();}else{ result='+arg_two_name+'();} return result;};';
-		tail = ''+wrapper_name+'()';
+		var head = 'var '+arg_one_name+'= function('+argsText+'){\nvar '+arg_one_name+' = '+buildFunctions(arg_one,'',argNames)+';\n return '+arg_one_name+';};\n';
+		head += 'var '+arg_two_name+'= function('+argsText+'){\nvar '+arg_two_name+' = '+buildFunctions(arg_two,'',argNames)+';\n return '+arg_two_name+';};\n';
+		head += 'var '+wrapper_name+'= function('+argsText+'){\n var truthval = '+buildFunctions(condition,'',argNames)+';'+
+		'var result;\n'+'if(truthval){ result = '+arg_one_name+'('+argsText+');\n} else {\nresult='+arg_two_name+'('+argsText+');\n} return result;\n};\n';
+		tail = ''+wrapper_name+'('+argsText+')';
 		PRE_MAIN = PRE_MAIN + head;
 		result = result+tail;
 	}
@@ -109,8 +128,9 @@ function createFuncDefs(stack){
 		else {
 			var state = stateFactory();
 			state.body = tree.data.iterator;
-			var result = parser(state, [], DEFS);
-			functions[tree.data.name] = fillVariables(result[0]);
+			var result = parser(state, [], DEFS)[0];
+			functions[tree.data.name] = fillVariables(result);
+			writeCustomFuncs(result, tree);
 		}
 	}
 	return;
@@ -127,13 +147,13 @@ function writeCustomFuncs(tree, definition){
 		funcBody += argNames[i];
 		if(i !== args.length-1){
 			funcBody += ', ';
-		} else { funcBody += '){';}
+		} else { funcBody += '){\n';}
 	}
 	DEFINED[name] = {name: funcName, arguments: argNames};
 	tree = insertVariableNames(tree, argNames);
 	var result = variables.newVariable();
-	funcBody += 'var '+result+' = '+buildFunctions(tree, '', argNames)+';';
-	funcBody += 'return '+result+';};';
+	funcBody += 'var '+result+' = '+buildFunctions(tree, '', argNames)+';\n';
+	funcBody += 'return '+result+';\n};\n';
 	var placeholders = ['X','Y','Z'];
 	PRE_MAIN += funcBody;
 	return;
@@ -192,6 +212,17 @@ var fillVariables = function(tree){
 		};
 	}
 };
+
+function argNameText(array){
+	var result = '';
+	for(var i =0; i < array.length; i++){
+		result += array[i];
+		if(i !== array.length-1){
+			result += ',';
+		}
+	}
+	return result;
+}
 
 // var replaceCustomFuncs = function replaceCustomFuncs(stack){
 // 	var temp;

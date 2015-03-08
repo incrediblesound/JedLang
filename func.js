@@ -4,7 +4,7 @@ module.exports = {
 		'-': 'sub(', 
 		'*': 'mult(', 
 		'/': 'div(', 
-		'@': 'show(',
+		'@': 'console.log(',
 		'^': 'append(',
 		'_': 'first(',
 		'>': 'greater(',

@@ -1,5 +1,4 @@
 (def sum EACH (+ e) NULL 0)
 (def len EACH (+ 1) NULL 0)
-(def avg X (/ sum len))
-(> (avg [1,2,3,4]))
-(> "Hello, world.")
+(def avg X (/ (sum X) (len X)))
+(@(avg [1,2,3,4]))

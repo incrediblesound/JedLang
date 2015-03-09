@@ -1,3 +1,7 @@
+function identity(x){
+	return x;
+};
+
 function greater(x, y){
 	return x > y;
 };

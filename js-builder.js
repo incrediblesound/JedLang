@@ -107,26 +107,11 @@ function buildFunctions(tree, result, argNames){
 function createFuncDefs(stack){
 	while(stack.length && stack[0].data.type === 'funcdef'){
 		var tree = stack.shift();
-		if(tree.data.action === 'EACH'){
-			// var funcData = tree.data.iterator.replace(/\(|\)/g,'').split(' ');
-			// var funcName = funcData[0];
-			// var funcElement = funcData[1];
-			// body  = 'root = root.children[0];var mainTree = new this.Tree();';
-			// body += 'var tree = mainTree;';
-			// body += 'tree.set("type", "function"); tree.set("value","'+funcName+'");';
-			// body += 'for(var i = 0; i < root.data.value.length; i++){';
-			// if(letters.contains(funcElement)){
-			// 	body += 'var child = tree.insert(); child.set("type","value"); child.set("value",root.data.value[i]);';
-			// } else {
-			// 	body += 'var child = tree.insert(); child.set("type","value"); child.set("value",'+funcElement+');';
-			// }
-			// body += 'if(i === root.data.value.length-1){';
-			// body += 'var child = tree.insert(); child.set("type","value"); child.set("value",'+tree.data["null"]+');}';
-			// body += 'else{tree = tree.insert(); tree.set("type", "function"); tree.set("value","'+funcName+'");}}';
-			// body += 'return mainTree;';
-			// var func = new Function('root',body);
-			// functions[tree.data.name] = func;
-			writeEachFunc(tree);
+		if(tree.data.action === 'REDC'){
+			writeREDCFunc(tree);
+		}
+		else if(tree.data.action === 'ARRY'){
+			writeARRYFunc(tree);
 		}
 		else {
 			var state = stateFactory();
@@ -162,7 +147,7 @@ function writeCustomFuncs(tree, definition){
 	return;
 };
 
-function writeEachFunc(tree){
+function writeREDCFunc(tree){
 	// make iterator function
 	var funcData = tree.data.iterator.replace(/\(|\)/g,'').split(' ');
 	var funcName = funcData[0], funcElement = funcData[1];
@@ -188,6 +173,25 @@ function writeEachFunc(tree){
 	DEFINED[name] = {name: funcName, arguments: argNames};
 	PRE_MAIN += funcBody;
 };
+
+function writeARRYFunc(tree){
+	var state = stateFactory();
+	state.body = tree.data.iterator;
+	var mutator = parser(state, [], DEFS)[0];
+
+	var name = tree.data.name;
+	var funcBody = '', argNames = [];
+	var funcName = variables.newVariable();
+	funcBody += 'var '+funcName+'= function(num, el){\n';
+	funcBody += 'var result = [], current = el;\n';
+	funcBody += 'for(var i=0; i<num; i++){\n';
+	funcBody += 'current = '+buildFunctions(mutator, '',['current'])+'\n';
+	funcBody += 'result.push(current);\n';
+	funcBody += '}\nreturn result;\n};\n';
+	DEFINED[name] = {name: funcName, arguments: argNames};
+	PRE_MAIN += funcBody;
+	
+}
 
 function insertVariableNames(tree, argNames){
 	tree = changeVar(tree);

@@ -1,7 +1,7 @@
 JedLang
 =======
 
-JedLang is a non-human-readable, non-expressive, functional language that compiles to C. It's kinda like lisp, and it is very concise because I like brevity and it's my language so there.
+JedLang is a crazy lisp-like languge that I made up for fun. It compiles to JavaScript.
 
 Lispy Math
 ----------
@@ -27,33 +27,35 @@ Define a function with def. The def command goes like this:
 (def <name> <arguments> <function body>)
 ```
 Make sure to use X Y or Z for you argument names, they correspond to the first, second and third arguments of a function invocation.    
-There is another kind of def that use core functions, for now there is only reduce, and it is called EACH... it is used like this:
+
+There is another kind of def that uses some core functions, for now there is reduce (REDC) and array (ARRY). They are used like this:
 
 ```shell
-(def <name> EACH <iterator> NULL <value>)
+(def <name> REDC <iterator>) // takes an array as input
+(def <name> ARRY <iterator>) // takes a number of iterations and (X) element to iterate
 ```
-
-The iterator will be used recursively on the contents of the list. The iterator function takes a single value, either a placeholder for the current value of the list or a numeric value. This iterator: (+ e) means add the next value of the list to the sum, while this one: (+ 1) means add one to the sum. NULL is what you give the function that takes the last index.
-
-Here are some of examples:
-
+The iterator in REDC can take a lowercase letter to stand in for the element at the current index during iteration. The iterator in ARRY can take uppercase letters to stand for the arguments used to invoke the function. For example:
 ```shell
-(def sum EACH (+ e) NULL 0)
-(def len EACH (+ 1) NULL 0)
-(def avg X (/ sum len))
+(def sum REDC (+ e))
+(@ (sum [1,2,3,4])) //=> 10
+(def len REDC (+ 1))
+(@ (len [1,2,3,4])) //=> 4
 
-(@ (sum [1,2,3])) //=> 6
-(@ (avg [1,2,3,4])) //=> 3 (float math coming soon)
+(def count ARRY (+ X 1))
+(@ (count 4 0)) //=> [1,2,3,4]
+
+(def avg X (/ sum len))
+(@ (avg (count 4 0))) //=> 2.5
 ```
 This one appends the sum of an array onto the beginning of the array:
 ```shell
-(def tot X (^ sum X))
+(def tot X (^ (sum X) X))
 (@ (tot [1,2,3,4])) //=> [10,1,2,3,4]
 ```
 Lets tack the average on for good measure:
 ```shell
-(def all X (^ avg tot))
-(all [1,2,3,4]) //=> [3,10,1,2,3,4]
+(def all X (^ (avg X) (tot X)))
+(@(all [1,2,3,4])) //=> [2.5,10,1,2,3,4]
 ```
 
 Booleans
@@ -63,7 +65,7 @@ Of course there are booleans:
 (@ (> 4 3)) //=> True
 (@ (< 1 0)) //=> False
 ```
-And a conditional function that works like this:
+And a conditional function that takes a boolean function as its first argument:
 ```shell
 (? <boolean func> <return if true> <return if false>)
 
@@ -72,7 +74,12 @@ And a conditional function that works like this:
 (def wow X Y (? (> X Y) (@ "wham") (@ "whoozle")))
 (wow 4 3) //=> "wham"
 ```
-The conditional function can take function arguments, as in the two print functions above, but the two return values have to be of the same type, so no funny stuff ya' hear?
+The conditional function can return functions, as in the two print functions above, or values like in the implementation of fibonnaci below:
+
+```shell
+(def low X (? (> X 0) 1 0))
+(def fib X (? (< X 3) (low X) (+ (fib (- X 1)) (fib (- X 2)))))
+```
 
 USE
 ---
@@ -81,8 +88,6 @@ Write a JedLang file and name it anything but give it a .jhe extension. To compi
 
 ```shell
 node parser.js <path/to/filename>
-./<filename>.out
 
-node parser.js mycode
-./mycode.out //=> stuff happens
+node ./<filename>.js
 ```

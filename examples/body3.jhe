@@ -1,8 +1,8 @@
-(def sum EACH (+ e) NULL 0)
-(def len EACH (+ 1) NULL 0)
-(def avg X (/ sum len))
+(def sum REDC (+ e))
+(def len REDC (+ 1))
+(def avg X (/ (sum X) (len X)))
 
-(def tot X (^ sum X))
-(def all X (^ avg tot))
+(def tot X (^ (sum X) X))
+(def all X (^ (avg X) (tot X)))
 
 (@ (all [1,2,3,4]))

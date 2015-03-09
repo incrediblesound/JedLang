@@ -9,6 +9,7 @@ module.exports = {
 		'_': 'first(',
 		'>': 'greater(',
 		'<': 'less(',
-		'?': 'condition('
+		'?': 'condition(',
+		'|': 'identity('
 	}
 };

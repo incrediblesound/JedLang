@@ -85,11 +85,11 @@ struct Object *mult(struct Object *a, struct Object*b){
 	return a;
 };
 
-struct Object *mult(struct Object *a, struct Object*b){
+struct Object *div(struct Object *a, struct Object*b){
 	if(a->type == 'i'){
-		a->dat.i = (a->dat.i) \ (b->dat.i);
+		a->dat.i = (a->dat.i) / (b->dat.i);
 	} else {
-		a->dat.f = (a->dat.f) \ (b->dat.f);
+		a->dat.f = (a->dat.f) / (b->dat.f);
 	}
 	return a;
 };

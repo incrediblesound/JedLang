@@ -25,7 +25,7 @@ var variables = {
 	vars: {},
 	newVariable: function(){
 		var result = '';
-		for(var i = 0; i < 16; i++){
+		for(var i = 0; i < 8; i++){
 			result += letters.rnd();
 		}
 		if(this.vars[result] !== undefined){
@@ -36,33 +36,55 @@ var variables = {
 	}
 };
 
+function makeIntObject(num){
+	var structName = variables.newVariable();
+	var unionName = variables.newVariable();
+	IN_SCOPE = IN_SCOPE + 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
+	IN_SCOPE = IN_SCOPE + 'struct Object '+structName+' = {\'i\',0,'+unionName+'};\n';
+	return '&'+structName;
+};
+
+function makeStringObject(str){
+	var structName = variables.newVariable();
+	var unionName = variables.newVariable();
+	var charName = variables.newVariable();
+	IN_SCOPE = IN_SCOPE + 'char '+charName+'['+(str.length+1)+'];\n';
+	IN_SCOPE = IN_SCOPE + 'strcpy('+charName+','+str+');\n';
+	IN_SCOPE = IN_SCOPE + 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
+	IN_SCOPE = IN_SCOPE + 'struct Object '+structName+' = {\'s\','+(str.length+1)+','+unionName+'};\n';
+	return '&'+structName;
+};
+
+////// make array object
+
 PRE_MAIN = '';
+PRE_BODY = '';
+IN_SCOPE = '';
 DEFS = null;
 module.exports = function(stack, name, funcdefs){
 	DEFS = funcdefs;
 	var command;
 	var result = '';
 	createFuncDefs(stack);
-	// replaceCustomFuncs(stack);
 	while(stack.length){
 		command = stack.shift();
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	result = '# include <jedlang.h>\n\n'+result;
-	fs.readFile('./sys.js', function(err, buffer){
-		var sys = buffer.toString();
-		fs.writeFileSync(name+'.js', PRE_MAIN+result);
-	})
+	result = '#include \"jedlang.h\"\n\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};';
+	fs.writeFileSync('output.c', result);
 };
 
 
 function buildFunctions(tree, result, argNames){
 	if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
-		result += argNames[ARG_MAP[tree.data.value]];
+		result += ''+argNames[ARG_MAP[tree.data.value]];
 	}
-	else if(tree.data.type === 'value' || tree.data.type === 'string'){
-		result += tree.data.value;
+	else if(tree.data.type === 'value'){
+		result += makeIntObject(tree.data.value);
+	}
+	else if(tree.data.type === 'string'){
+		result += makeStringObject(tree.data.value);
 	}
 	else if(tree.data.type === 'array'){
 		result += '['+tree.data.value+']';
@@ -88,16 +110,33 @@ function buildFunctions(tree, result, argNames){
 		result += ')';
 	}
 	else if(tree.data.value === '?'){
-		var argsText = (argNames !== undefined) ? argNameText(argNames) : '';
+		var argsText = (argNames !== undefined) ? argNameText(argNames, false) : '';
+		var argsTextInner = (argNames !== undefined) ? argNameText(argNames, true) : '';
 		var arg_one = tree.children[1], arg_two = tree.children[2];
 		var condition = tree.children[0];
 		var arg_one_name = variables.newVariable(), arg_two_name = variables.newVariable();
 		var wrapper_name = variables.newVariable();
-		var head = 'var '+arg_one_name+'= function('+argsText+'){\nvar '+arg_one_name+' = '+buildFunctions(arg_one,'',argNames)+';\n return '+arg_one_name+';};\n';
-		head += 'var '+arg_two_name+'= function('+argsText+'){\nvar '+arg_two_name+' = '+buildFunctions(arg_two,'',argNames)+';\n return '+arg_two_name+';};\n';
-		head += 'var '+wrapper_name+'= function('+argsText+'){\n var truthval = '+buildFunctions(condition,'',argNames)+';'+
-		'var result;\n'+'if(truthval){ result = '+arg_one_name+'('+argsText+');\n} else {\nresult='+arg_two_name+'('+argsText+');\n} return result;\n};\n';
-		tail = ''+wrapper_name+'('+argsText+')';
+		var isShow;
+		IN_SCOPE = '';
+		isShow = arg_one.data.value === "@";
+		var func_body = buildFunctions(arg_one,'',argNames);
+		var head = 'struct Object *'+arg_one_name+'('+argsText+'){\n'+
+			IN_SCOPE+(isShow ? 'int num':'struct Object *'+arg_one_name)+' = '+func_body+';\nreturn '+(isShow ? argsTextInner : arg_one_name)+';};\n';
+		
+		IN_SCOPE = '';
+		isShow = arg_two.data.value === "@";
+		func_body = buildFunctions(arg_two,'',argNames);
+		head += 'struct Object *'+arg_two_name+'('+argsText+'){\n'+
+			IN_SCOPE+(isShow ? 'int num':'struct Object *'+arg_two_name)+' = '+func_body+';\nreturn '+(isShow ? argsTextInner : arg_two_name)+';};\n';
+		
+		IN_SCOPE = '';
+		func_body = buildFunctions(condition,'',argNames);
+		head += 'struct Object *'+wrapper_name+'('+argsText+'){\n'+
+			IN_SCOPE+'struct Object *truthval = '+func_body+';'+
+		'struct Object *result;\n'+'if(truthval->dat.i == 1){ result = '+arg_one_name+'('+argsTextInner+');\n} else {\nresult='+arg_two_name+'('+argsTextInner+');\n} return result;\n};\n';
+		
+		IN_SCOPE = '';
+		tail = ''+wrapper_name+'('+argsTextInner+')';
 		PRE_MAIN = PRE_MAIN + head;
 		result = result+tail;
 	}
@@ -129,18 +168,18 @@ function writeCustomFuncs(tree, definition){
 	var name = definition.data.name;
 	var funcBody = '', argNames = [];
 	var funcName = variables.newVariable();
-	funcBody += 'var '+funcName+'= function(';
+	funcBody += 'struct Object *'+funcName+'(';
 	for(var i = 0; i < args.length; i++){
 		argNames.push(variables.newVariable());
-		funcBody += argNames[i];
+		funcBody += 'struct Object *'+argNames[i];
 		if(i !== args.length-1){
 			funcBody += ', ';
 		} else { funcBody += '){\n';}
 	}
 	DEFINED[name] = {name: funcName, arguments: argNames};
-	tree = insertVariableNames(tree, argNames);
+	// tree = insertVariableNames(tree, argNames);
 	var result = variables.newVariable();
-	funcBody += 'var '+result+' = '+buildFunctions(tree, '', argNames)+';\n';
+	funcBody += 'struct Object *'+result+' = '+buildFunctions(tree, '', argNames)+';\n';
 	funcBody += 'return '+result+';\n};\n';
 	var placeholders = ['X','Y','Z'];
 	PRE_MAIN += funcBody;
@@ -247,10 +286,10 @@ var fillVariables = function(tree){
 	}
 };
 
-function argNameText(array){
+function argNameText(array, inner){
 	var result = '';
 	for(var i =0; i < array.length; i++){
-		result += array[i];
+		result += (!inner ? 'struct Object *': '')+array[i];
 		if(i !== array.length-1){
 			result += ',';
 		}

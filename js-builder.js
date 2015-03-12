@@ -49,10 +49,10 @@ module.exports = function(stack, name, funcdefs){
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	result += '\n\n//begin core functions\n\n'
+	result = '# include <jedlang.h>\n\n'+result;
 	fs.readFile('./sys.js', function(err, buffer){
 		var sys = buffer.toString();
-		fs.writeFileSync(name+'.js', PRE_MAIN+result+sys);
+		fs.writeFileSync(name+'.js', PRE_MAIN+result);
 	})
 };
 

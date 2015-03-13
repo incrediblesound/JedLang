@@ -84,10 +84,10 @@ The conditional function can return functions, as in the two print functions abo
 USE
 ---
 
-Write a JedLang file and name it anything but give it a .jhe extension. To compile and run use the following pattern:
+Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
 
 ```shell
 node parser.js <path/to/filename>
 
-node ./<filename>.js
+./<filename>.out
 ```

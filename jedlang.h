@@ -14,7 +14,7 @@ struct Object {
 	union Data dat;
 };
 
-int show(struct Object obj){
+struct Object show(struct Object obj){
 	if(obj.type == 's'){
 		printf("%s\n", obj.dat.s);
 	}
@@ -40,7 +40,7 @@ int show(struct Object obj){
 		}
 		printf("]\n");
 	}
-	return 0;
+	return obj;
 };
 int setInt(struct Object obj, int num){
 	obj.type = 'i';

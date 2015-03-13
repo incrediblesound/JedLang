@@ -39,8 +39,8 @@ var variables = {
 function makeIntObject(num){
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
-	IN_SCOPE = IN_SCOPE + 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
-	IN_SCOPE = IN_SCOPE + 'struct Object '+structName+' = {\'i\',0,'+unionName+'};\n';
+	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
+	IN_SCOPE += 'struct Object '+structName+' = {\'i\',0,'+unionName+'};\n';
 	return structName;
 };
 
@@ -48,10 +48,10 @@ function makeStringObject(str){
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	var charName = variables.newVariable();
-	IN_SCOPE = IN_SCOPE + 'char '+charName+'['+(str.length+1)+'];\n';
-	IN_SCOPE = IN_SCOPE + 'strcpy('+charName+','+str+');\n';
-	IN_SCOPE = IN_SCOPE + 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
-	IN_SCOPE = IN_SCOPE + 'struct Object '+structName+' = {\'s\','+(str.length+1)+','+unionName+'};\n';
+	IN_SCOPE += 'char '+charName+'['+(str.length+1)+'];\n';
+	IN_SCOPE += 'strcpy('+charName+','+str+');\n';
+	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
+	IN_SCOPE += 'struct Object '+structName+' = {\'s\','+(str.length+1)+','+unionName+'};\n';
 	return structName;
 };
 
@@ -118,31 +118,23 @@ function buildFunctions(tree, result, argNames){
 		var arg_one_name = variables.newVariable(), arg_two_name = variables.newVariable();
 		var wrapper_name = variables.newVariable();
 		var isShow;
-		IN_SCOPE = '';
-		DECLARATIONS += makeDeclaration(arg_one_name, argNames.length);
-		isShow = arg_one.data.value === "@";
-		var func_body = buildFunctions(arg_one,'',argNames);
-		var head = 'struct Object '+arg_one_name+'('+argsText+'){\n'+
-			IN_SCOPE+(isShow ? 'int num':'struct Object '+arg_one_name)+' = '+func_body+';\nreturn '+(isShow ? argsTextInner : arg_one_name)+';};\n';
+		var head = '';
+
+		var arg_one_func_body = buildFunctions(arg_one,'',argNames);
+
+		var arg_two_func_body = buildFunctions(arg_two,'',argNames);
 		
-		IN_SCOPE = '';
-		DECLARATIONS += makeDeclaration(arg_two_name, argNames.length);
-		isShow = arg_two.data.value === "@";
-		func_body = buildFunctions(arg_two,'',argNames);
-		head += 'struct Object '+arg_two_name+'('+argsText+'){\n'+
-			IN_SCOPE+(isShow ? 'int num':'struct Object '+arg_two_name)+' = '+func_body+';\nreturn '+(isShow ? argsTextInner : arg_two_name)+';};\n';
-		
-		IN_SCOPE = '';
 		DECLARATIONS += makeDeclaration(wrapper_name, argNames.length);
-		func_body = buildFunctions(condition,'',argNames);
-		head += 'struct Object '+wrapper_name+'('+argsText+'){\n'+
-			IN_SCOPE+'struct Object truthval = '+func_body+';\n'+
-		'struct Object result;\n'+'if(truthval.dat.i == 1){\nresult = '+arg_one_name+'('+argsTextInner+');\n} else {\nresult='+arg_two_name+'('+argsTextInner+');\n} return result;\n};\n';
+		var func_body = buildFunctions(condition,'',argNames);
+		head += 'struct Object '+wrapper_name+'('+argsText+'){\n'+IN_SCOPE+
+			'struct Object truthval = '+func_body+';\nstruct Object result;\n'+
+			'if(truthval.dat.i == 1){\nresult = '+arg_one_func_body+';\n'+
+			'} else {\nresult='+arg_two_func_body+';\n} return result;\n};\n';
 		
 		IN_SCOPE = '';
 		tail = ''+wrapper_name+'('+argsTextInner+')';
-		PRE_MAIN = PRE_MAIN + head;
-		result = result+tail;
+		PRE_MAIN += head;
+		result += tail;
 	}
 	return result;
 };

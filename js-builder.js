@@ -21,6 +21,13 @@ ARG_MAP = {
 	'Z': 2
 };
 
+DECLARATIONS = '';
+PRE_MAIN = '';
+PRE_BODY = '';
+IN_SCOPE = '';
+IN_SCOPE_LEN = {prev: 0, current: 0};
+DEFS = null;
+
 var variables = {
 	vars: {},
 	newVariable: function(){
@@ -37,14 +44,17 @@ var variables = {
 };
 
 function makeIntObject(num){
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
 	IN_SCOPE += 'struct Object '+structName+' = {\'i\',0,'+unionName+'};\n';
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
 	return structName;
 };
 
 function makeStringObject(str){
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	var charName = variables.newVariable();
@@ -52,16 +62,22 @@ function makeStringObject(str){
 	IN_SCOPE += 'strcpy('+charName+','+str+');\n';
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
 	IN_SCOPE += 'struct Object '+structName+' = {\'s\','+(str.length+1)+','+unionName+'};\n';
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
 	return structName;
 };
 
-////// make array object
+function makeArrayObject(arr){
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
+	var structName = variables.newVariable();
+	var unionName = variables.newVariable();
+	var arrName = variables.newVariable();
+	IN_SCOPE += 'int '+arrName+'['+arr.length+'] = {'+arr.toString()+'};\n';
+	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.ia = '+arrName+';\n';
+	IN_SCOPE += 'struct Object '+structName+' = {\'a\','+arr.length+','+unionName+'};\n';
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
+	return structName;
+}
 
-DECLARATIONS = '';
-PRE_MAIN = '';
-PRE_BODY = '';
-IN_SCOPE = '';
-DEFS = null;
 module.exports = function(stack, name, funcdefs){
 	DEFS = funcdefs;
 	var command;
@@ -93,7 +109,7 @@ function buildFunctions(tree, result, argNames){
 		result += makeStringObject(tree.data.value);
 	}
 	else if(tree.data.type === 'array'){
-		result += '['+tree.data.value+']';
+		result += makeArrayObject(tree.data.value);
 	}
 	else if(tree.data.type === 'custom' && DEFINED[tree.data.value] !== undefined){
 		result += DEFINED[tree.data.value].name + '(';
@@ -202,17 +218,17 @@ function writeREDCFunc(tree){
 			placeholder = true;
 			child = func.insert(); child.set('type','value'); child.set('value',funcElement);
 		}
-
 	var name = tree.data.name;
-	var funcBody = '', argNames = [];
+	var funcBody = '', head = '', argNames = [];
 	var funcName = variables.newVariable();
-	funcBody += 'var '+funcName+'= function(array){\n';
-	funcBody += 'var result;\nfor(var i=1, l=array.length; i<l; i++){\n';
-	funcBody += 'if(i===1){ result = '+(placeholder ? funcElement : 'array[0]')+' };\n'
-	funcBody += 'result = '+buildFunctions(func, '',['result','array[i]']);
-	funcBody += '}\nreturn result;\n};\n';
+	head += 'struct Object '+funcName+'(struct Object array){\n';
+	funcBody += placeholder ? makeObjectInstance(funcElement) : 'struct Object jed_obj = getInt(array);\n';
+	funcBody += 'for(int i=1; i<array.length; i++){\n';
+	funcBody += 'jed_obj = '+buildFunctions(func, '',['jed_obj','createInt(array.dat.ia[i])'])+';';
+	funcBody += '}\nreturn jed_obj;\n};\n';
 	DEFINED[name] = {name: funcName, arguments: argNames};
-	PRE_MAIN += funcBody;
+	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 };
 
 function writeARRYFunc(tree){
@@ -223,15 +239,17 @@ function writeARRYFunc(tree){
 	var name = tree.data.name;
 	var funcBody = '', argNames = [];
 	var funcName = variables.newVariable();
-	funcBody += 'var '+funcName+'= function(num, el){\n';
-	funcBody += 'var result = [], current = el;\n';
-	funcBody += 'for(var i=0; i<num; i++){\n';
-	funcBody += 'current = '+buildFunctions(mutator, '',['current'])+'\n';
-	funcBody += 'result.push(current);\n';
+	var head = 'struct Object '+funcName+'(struct Object num, struct Object el){\n';
+	funcBody += 'int arr[1] = { el.dat.i };\n';
+	funcBody += 'union Data dat; dat.ia = arr;\n'
+	funcBody += 'struct Object result = {\'a\',1,dat};\n';
+	funcBody += 'for(int i=1; i<num.dat.i; i++){\n';
+	funcBody += 'el = '+buildFunctions(mutator, '',['el'])+';\n';
+	funcBody += 'result = append(el, result);\n';
 	funcBody += '}\nreturn result;\n};\n';
 	DEFINED[name] = {name: funcName, arguments: argNames};
-	PRE_MAIN += funcBody;
-	
+	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 }
 
 function insertVariableNames(tree, argNames){
@@ -313,31 +331,43 @@ function makeDeclaration(name, num){
 	return result;
 };
 
-var replaceCustomFuncs = function replaceCustomFuncs(stack){
-	var temp;
-	for(var i = 0; i < stack.length; i++){
-		console.log(DEFINED)
-		if(stack[i].data.type === 'custom' && 
-			DEFINED[stack[i].data.value] === undefined){
-			stack[i] = functions[stack[i].data.value](stack[i]);
-		} 
-		if(stack[i].children.length){
-			for(var k = 0, l = stack[i].children.length; k < l; k++){
-				stack[i].children[k] = recurse(stack[i].children[k]);
-			}
-		}
+function makeObjectInstance(value){
+	if(typeof parseInt(value) === 'number' &&
+		parseInt(value) === parseInt(value)){
+		return 'struct Object jed_obj = createInt('+value+');\n';
 	}
-	return stack;
-
-	function recurse(tree){
-		if(tree.data.type === 'custom'){
-			tree = functions[tree.data.value](tree);
-		}
-		if(tree.children.length){
-			for(var i = 0, l = tree.children.length; i < l; i++){
-				tree.children[i] = recurse(tree.children[i], root);
-			}
-		}
-		return tree;
-	};
+	else if(typeof value === 'string'){
+		var result = 'char str['+(value.length+1)+'];\n'+
+		'strcpy(str, '+value+');\nstruct Object jed_obj = createString('+value+');\n';
+		return result;
+	}
 };
+
+// var replaceCustomFuncs = function replaceCustomFuncs(stack){
+// 	var temp;
+// 	for(var i = 0; i < stack.length; i++){
+// 		console.log(DEFINED)
+// 		if(stack[i].data.type === 'custom' && 
+// 			DEFINED[stack[i].data.value] === undefined){
+// 			stack[i] = functions[stack[i].data.value](stack[i]);
+// 		} 
+// 		if(stack[i].children.length){
+// 			for(var k = 0, l = stack[i].children.length; k < l; k++){
+// 				stack[i].children[k] = recurse(stack[i].children[k]);
+// 			}
+// 		}
+// 	}
+// 	return stack;
+
+// 	function recurse(tree){
+// 		if(tree.data.type === 'custom'){
+// 			tree = functions[tree.data.value](tree);
+// 		}
+// 		if(tree.children.length){
+// 			for(var i = 0, l = tree.children.length; i < l; i++){
+// 				tree.children[i] = recurse(tree.children[i], root);
+// 			}
+// 		}
+// 		return tree;
+// 	};
+// };

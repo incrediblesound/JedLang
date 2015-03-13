@@ -42,21 +42,43 @@ struct Object show(struct Object obj){
 	}
 	return obj;
 };
-int setInt(struct Object obj, int num){
-	obj.type = 'i';
-	obj.dat.i = num;
-	return 0;
+struct Object createInt(int num){
+	union Data d;
+	d.i = num;
+	struct Object obj = {'i',0,d};
+	return obj;
 };
-int setFloat(struct Object obj, float num){
-	obj.type = 'f';
-	obj.dat.f = num;
-	return 0;
+struct Object createFloat(float num){
+	union Data d;
+	d.f = num;
+	struct Object obj = {'f',0,d};
+	return obj;
 };
-int setString(struct Object obj, char *str){
-	obj.type = 's';
-	obj.dat.s = str;
-	return 0;
+struct Object createString(char *str){
+	union Data d;
+	d.s = str;
+	struct Object obj = {'s',0,d};
+	return obj;
 };
+
+struct Object createArray(int *ia){
+	union Data d;
+	d.ia = ia;
+	struct Object obj = {'a',1,d};
+	return obj;
+};
+
+struct Object getInt(struct Object obj){
+	union Data d;
+	if(obj.type == 'i'){
+		return createInt(obj.dat.i);
+	}
+	else {
+		return createInt(obj.dat.ia[0]);
+	}
+};
+
+
 
 struct Object add(struct Object a, struct Object b){
 	if(a.type == 'i'){
@@ -87,9 +109,9 @@ struct Object mult(struct Object a, struct Object b){
 
 struct Object div(struct Object a, struct Object b){
 	if(a.type == 'i'){
-		a.dat.i = (a.dat.i) / (b.dat.i);
+		a.dat.i = a.dat.i / b.dat.i;
 	} else {
-		a.dat.f = (a.dat.f) / (b.dat.f);
+		a.dat.f = a.dat.f / b.dat.f;
 	}
 	return a;
 };
@@ -125,6 +147,13 @@ struct Object identity(struct Object a){
 };
 
 struct Object append(struct Object a, struct Object b){
+	b.length = b.length+1;
+	b.dat.ia[b.length-1] = a.dat.i;	
+	b.type = 'a';
+	return b;
+};
+
+struct Object prepend(struct Object a, struct Object b){
 	b.length = b.length+1;
 	int frst = a.dat.i;
 	int temp, insert;

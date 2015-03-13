@@ -5,7 +5,7 @@ module.exports = {
 		'*': 'mult(', 
 		'/': 'div(', 
 		'@': 'show(',
-		'^': 'append(',
+		'^': 'prepend(',
 		'_': 'first(',
 		'>': 'greater(',
 		'<': 'less(',

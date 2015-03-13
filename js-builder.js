@@ -74,6 +74,11 @@ module.exports = function(stack, name, funcdefs){
 	};
 	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};';
 	fs.writeFileSync('output.c', result);
+	exec('gcc output.c -o '+name+'.out', function(err){
+		if(err) console.log(err);
+		// exec('rm -rf output.c');
+		return;
+	});
 };
 
 

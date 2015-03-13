@@ -9,6 +9,6 @@
   "author": "James H Edwards",
   "license": "MIT",
   "dependencies": {
-    "commander": "^2.6.0"
+    "commander": "^2.7.1"
   }
 }

@@ -21,19 +21,19 @@ Output
 Functions
 ---------
 
-Core functions:
-\+  add (X, Y) -> returns sum    
-\-  sub (X, Y) -> returns difference    
-\*  mult (X, Y) -> returns product    
-/  div (X, Y) -> divides X and Y    
-@  show (X) -> prints value of X to console    
-^  prepend (X, Y) -> prepends X onto Y, where Y is an array    
-_  member (X, Y) -> returns member of set Y at index X    
-\>  greater (X, Y) -> returns true if X is greater than Y    
-<  less (X, Y) -> returns true if X is less than Y    
-?  condition (X, Y, Z) -> returns Y if X is true, otherwise returns Z    
-|  identity (X) -> returns X    
-.  length (X) -> returns length of X, where X is an array or a set    
+Core functions:    
+\+ (X, Y) -> returns sum    
+\- (X, Y) -> returns difference    
+\* (X, Y) -> returns product    
+/  (X, Y) -> divides X and Y    
+@  (X) -> prints value of X to console    
+^  (X, Y) -> prepends X onto Y, where Y is an array    
+_  (X, Y) -> returns member of set Y at index X    
+\> (X, Y) -> returns true if X is greater than Y    
+<  (X, Y) -> returns true if X is less than Y    
+?  (X, Y, Z) -> returns Y if X is true, otherwise returns Z    
+|  (X) -> returns X    
+.  (X) -> returns length of X, where X is an array or a set    
 
 Define a custom function with def. The def command goes like this:
 

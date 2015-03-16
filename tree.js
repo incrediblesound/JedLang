@@ -14,6 +14,14 @@ Tree.prototype.set = function(prop, value){
 	this.data[prop] = value;
 }
 
+Tree.prototype.get = function(prop){
+	return this.data[prop];
+}
+
+Tree.prototype.size = function(){
+	return this.children.length;
+}
+
 module.exports = {
 	Tree: Tree
 }

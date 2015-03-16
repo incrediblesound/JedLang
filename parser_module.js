@@ -4,19 +4,18 @@ var Set = require('./set.js').Set;
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
 numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
-funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|']);
+funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.']);
 patterns = new Set(['(',')','[',']','"']);
 custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
 module.exports = function(state, stack, defs){
-
 	//have to import custom function names from initial parsing step
 	custom.setData(defs);
 	while(state.i < state.body.length) {
 		current = state.next();
 		if(anyChar.contains(current)){
-			if(current === '(' && state.chunk(4) !== '(def'){
+			if(current === '(' && state.chunk(4) !== '(def' && state.chunk(4) !== '(set'){
 				if(state.scope === null){
 					state.scope = new Tree();
 				} else {
@@ -30,8 +29,14 @@ module.exports = function(state, stack, defs){
 			else if(custom.contains(state.next_word())){
 				var name = state.next_word();
 				state.advance(name.length-1);
-				state.scope.set('type','custom');
-				state.scope.set('value', name);
+				if(state.scope.get('type') !== undefined){
+					valNode = state.scope.insert();
+					valNode.set('type','custom');
+					valNode.set('value',name);
+				} else {
+					state.scope.set('type','custom');
+					state.scope.set('value', name);	
+				}
 			}
 			else if(LETTERS.contains(current)){
 				var val = state.idx();
@@ -102,6 +107,18 @@ module.exports = function(state, stack, defs){
 				if(state.idx() === ')'){
 					stack.push(defn);
 				}
+			}
+			else if(state.chunk(3) === 'set'){
+				current = state.advance(4);
+				var name = state.take_name();
+				custom.add(name);
+				current = state.idx();
+				var defset = new Tree();
+				defset.set('type','setdef');
+				defset.set('name', name);
+				var content = state.take_brackets();
+				defset.set('value', content);
+				stack.push(defset);
 			}
 		}
 		state.incr();

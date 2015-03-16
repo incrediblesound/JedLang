@@ -1,0 +1,9 @@
+(set james {"James", 31, "Developer"})
+(set mary {"Mary", 29, "Architect"})
+(set john {"John", 25, "Intern"})
+(set employees {james, mary, john})
+
+(def fst X (_ 0 X))
+(def lst X (_ (- (. X) 1) X))
+(def job X Y (@ (lst (_ X Y))))
+(job (- (. employees) 1) employees)

@@ -6,10 +6,11 @@ module.exports = {
 		'/': 'div(', 
 		'@': 'show(',
 		'^': 'prepend(',
-		'_': 'first(',
+		'_': 'member(',
 		'>': 'greater(',
 		'<': 'less(',
 		'?': 'condition(',
-		'|': 'identity('
+		'|': 'identity(',
+		'.': 'length('
 	}
 };

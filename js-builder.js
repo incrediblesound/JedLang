@@ -43,6 +43,25 @@ var variables = {
 	}
 };
 
+module.exports = function(stack, name, funcdefs){
+	DEFS = funcdefs;
+	var command;
+	var result = '';
+	createFuncDefs(stack);
+	while(stack.length){
+		command = stack.shift();
+		result = buildFunctions(command, result);
+		result += ';';
+	};
+	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};';
+	fs.writeFileSync('output.c', result);
+	exec('gcc output.c -o '+name+'.out', function(err){
+		if(err) console.log(err);
+		// exec('rm -rf output.c');
+		return;
+	});
+};
+
 function makeIntObject(num){
 	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
@@ -78,60 +97,44 @@ function makeArrayObject(arr){
 	return structName;
 }
 
-module.exports = function(stack, name, funcdefs){
-	DEFS = funcdefs;
-	var command;
-	var result = '';
-	createFuncDefs(stack);
-	while(stack.length){
-		command = stack.shift();
-		result = buildFunctions(command, result);
-		result += ';';
-	};
-	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};';
-	fs.writeFileSync('output.c', result);
-	exec('gcc output.c -o '+name+'.out', function(err){
-		if(err) console.log(err);
-		// exec('rm -rf output.c');
-		return;
-	});
-};
-
-
 function buildFunctions(tree, result, argNames){
-	if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
-		result += ''+argNames[ARG_MAP[tree.data.value]];
+	if(tree.get('type') === 'value' && LETTERS.contains(tree.get('value'))){
+		result += ''+argNames[ARG_MAP[tree.get('value')]];
 	}
-	else if(tree.data.type === 'value'){
-		result += makeIntObject(tree.data.value);
+	else if(tree.get('type') === 'value'){
+		result += makeIntObject(tree.get('value'));
 	}
-	else if(tree.data.type === 'string'){
-		result += makeStringObject(tree.data.value);
+	else if(tree.get('type') === 'string'){
+		result += makeStringObject(tree.get('value'));
 	}
-	else if(tree.data.type === 'array'){
-		result += makeArrayObject(tree.data.value);
+	else if(tree.get('type') === 'array'){
+		result += makeArrayObject(tree.get('value'));
 	}
-	else if(tree.data.type === 'custom' && DEFINED[tree.data.value] !== undefined){
-		result += DEFINED[tree.data.value].name + '(';
-		for(var i = 0; i < tree.children.length; i++){
+	else if(tree.get('type') === 'custom' && DEFINED[tree.get('value')] !== undefined){
+		if(DEFINED[tree.get('value')].type === 'function'){
+			result += DEFINED[tree.get('value')].name + '(';
+			for(var i = 0; i < tree.size(); i++){
+				result = buildFunctions(tree.children[i], result, argNames);
+				if(i !== tree.children.length-1){
+					result += ',';
+				}
+			}
+			result += ')';	
+		} else {
+			result += DEFINED[tree.get('value')].name;
+		}
+	}
+	else if(tree.get('type') === 'function' && tree.data.value !== '?'){
+		result += sys.map[tree.get('value')];
+		for(var i = 0; i < tree.size(); i++){
 			result = buildFunctions(tree.children[i], result, argNames);
-			if(i !== tree.children.length-1){
+			if(i !== tree.size()-1){
 				result += ',';
 			}
 		}
 		result += ')';
 	}
-	else if(tree.data.type === 'function' && tree.data.value !== '?'){
-		result += sys.map[tree.data.value];
-		for(var i = 0; i < tree.children.length; i++){
-			result = buildFunctions(tree.children[i], result, argNames);
-			if(i !== tree.children.length-1){
-				result += ',';
-			}
-		}
-		result += ')';
-	}
-	else if(tree.data.value === '?'){
+	else if(tree.get('value') === '?'){
 		var argsText = (argNames !== undefined) ? argNameText(argNames, false) : '';
 		var argsTextInner = (argNames !== undefined) ? argNameText(argNames, true) : '';
 		var arg_one = tree.children[1], arg_two = tree.children[2];
@@ -161,9 +164,13 @@ function buildFunctions(tree, result, argNames){
 };
 
 function createFuncDefs(stack){
-	while(stack.length && stack[0].data.type === 'funcdef'){
+	while(stack.length && (stack[0].get('type') === 'funcdef' ||
+		  stack[0].get('type') === 'setdef')){
 		var tree = stack.shift();
-		if(tree.data.action === 'REDC'){
+		if(tree.get('type') === 'setdef'){
+			writeSetObject(tree);
+		}
+		else if(tree.data.action === 'REDC'){
 			writeREDCFunc(tree);
 		}
 		else if(tree.data.action === 'ARRY'){
@@ -180,33 +187,61 @@ function createFuncDefs(stack){
 	return;
 };
 
+function writeSetObject(tree){
+	var members = tree.get('value');
+	var memberNames = [], name;
+	for(var i = 0, l = members.length; i < l; i++){
+		var member = members[i];
+		if(getType(member) === 'number'){
+			memberNames.push(makeIntObject(member));
+		} else {
+			member = trim(member);
+			if(DEFINED[member] && DEFINED[member].type === 'set'){
+				memberNames.push(DEFINED[member].name);
+			} else {
+				memberNames.push(makeStringObject(member));
+			}
+		}
+	}
+	var objectArrName = variables.newVariable();
+	var unionName = variables.newVariable();
+	IN_SCOPE += 'struct Object '+objectArrName+'['+members.length+
+		'] = {'+printList(memberNames)+'};\n';
+	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
+	var objectName = variables.newVariable();
+	IN_SCOPE += 'struct Object '+objectName+' = {\'u\','+members.length+','+unionName+'};\n';
+	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
+}
+
 function writeCustomFuncs(tree, definition){
 	var args = definition.data.arguments;
 	var name = definition.data.name;
 	var funcBody = '', argNames = [];
 	var funcName = variables.newVariable();
 	DECLARATIONS += makeDeclaration(funcName, args.length);
-	funcBody += 'struct Object '+funcName+'(';
+	var head = 'struct Object '+funcName+'(';
 	for(var i = 0; i < args.length; i++){
 		argNames.push(variables.newVariable());
-		funcBody += 'struct Object '+argNames[i];
+		head += 'struct Object '+argNames[i];
 		if(i !== args.length-1){
-			funcBody += ', ';
-		} else { funcBody += '){\n';}
+			head += ', ';
+		} else { head += '){\n';}
 	}
-	DEFINED[name] = {name: funcName, arguments: argNames};
+	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	// tree = insertVariableNames(tree, argNames);
 	var result = variables.newVariable();
 	funcBody += 'struct Object '+result+' = '+buildFunctions(tree, '', argNames)+';\n';
 	funcBody += 'return '+result+';\n};\n';
 	var placeholders = ['X','Y','Z'];
-	PRE_MAIN += funcBody;
+	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 	return;
 };
 
 function writeREDCFunc(tree){
 	// make iterator function
-	var funcData = tree.data.iterator.replace(/\(|\)/g,'').split(' ');
+	var funcData = tree.get('iterator').replace(/\(|\)/g,'').split(' ');
 	var funcName = funcData[0], funcElement = funcData[1];
 	var func = new Tree();
 	func.set('type','function'); func.set('value',funcName);
@@ -218,7 +253,7 @@ function writeREDCFunc(tree){
 			placeholder = true;
 			child = func.insert(); child.set('type','value'); child.set('value',funcElement);
 		}
-	var name = tree.data.name;
+	var name = tree.get('name');
 	var funcBody = '', head = '', argNames = [];
 	var funcName = variables.newVariable();
 	head += 'struct Object '+funcName+'(struct Object array){\n';
@@ -226,17 +261,17 @@ function writeREDCFunc(tree){
 	funcBody += 'for(int i=1; i<array.length; i++){\n';
 	funcBody += 'jed_obj = '+buildFunctions(func, '',['jed_obj','createInt(array.dat.ia[i])'])+';';
 	funcBody += '}\nreturn jed_obj;\n};\n';
-	DEFINED[name] = {name: funcName, arguments: argNames};
+	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
 	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 };
 
 function writeARRYFunc(tree){
 	var state = stateFactory();
-	state.body = tree.data.iterator;
+	state.body = tree.get('iterator');
 	var mutator = parser(state, [], DEFS)[0];
 
-	var name = tree.data.name;
+	var name = tree.get('name');
 	var funcBody = '', argNames = [];
 	var funcName = variables.newVariable();
 	var head = 'struct Object '+funcName+'(struct Object num, struct Object el){\n';
@@ -247,7 +282,7 @@ function writeARRYFunc(tree){
 	funcBody += 'el = '+buildFunctions(mutator, '',['el'])+';\n';
 	funcBody += 'result = append(el, result);\n';
 	funcBody += '}\nreturn result;\n};\n';
-	DEFINED[name] = {name: funcName, arguments: argNames};
+	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
 	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 }
@@ -258,15 +293,15 @@ function insertVariableNames(tree, argNames){
 
 	function changeVar(tree){
 		var placeholders = ['X','Y','Z'];
-		if(tree.data.type === 'value'){
+		if(tree.get('type') === 'value'){
 			for(var i = 0; i < placeholders.length; i++){
-				if(tree.data.value === placeholders[i]){
-					tree.data.value = argNames[i];
+				if(tree.get('value') === placeholders[i]){
+					tree.get('value') = argNames[i];
 				}
 			}
 		}
-		if(tree.children.length){
-			for(var k = 0; k < tree.children.length; k++){
+		if(tree.size()){
+			for(var k = 0; k < tree.size(); k++){
 				changeVar(tree.children[k]);
 			}
 		}
@@ -274,43 +309,11 @@ function insertVariableNames(tree, argNames){
 	}
 };
 
-var fillVariables = function(tree){
-	return function(root){
-		var args = root.children;
-		recurse(tree);
-		return tree;
-		function recurse(tree){
-			if(tree.data.type === 'value' && LETTERS.contains(tree.data.value)){
-				if(tree.data.value === 'X'){
-					tree.data.value = root.children[0].data.value;
-					tree.data.type = root.children[0].data.type;
-					tree.children = root.children[0].children;
-				}
-				if(tree.data.value === 'Y'){
-					tree.data.value = root.children[1].data.value;
-					tree.data.type = root.children[1].data.type;
-					tree.children = root.children[1].children;
-				}
-				if(tree.data.value === 'Z'){
-					tree.data.value = root.children[2].data.value;
-					tree.data.type = root.children[2].data.type;
-					tree.children = root.children[2].children;
-				}
-			}
-			if(tree.children.length){
-				for(var i = 0, l = tree.children.length; i < l; i++){
-					recurse(tree.children[i]);
-				}
-			}
-		};
-	}
-};
-
 function argNameText(array, inner){
 	var result = '';
 	for(var i =0; i < array.length; i++){
 		result += (!inner ? 'struct Object ': '')+array[i];
-		if(i !== array.length-1){
+		if(i < array.length-1){
 			result += ',';
 		}
 	}
@@ -332,8 +335,7 @@ function makeDeclaration(name, num){
 };
 
 function makeObjectInstance(value){
-	if(typeof parseInt(value) === 'number' &&
-		parseInt(value) === parseInt(value)){
+	if(parseInt(value) === parseInt(value)){
 		return 'struct Object jed_obj = createInt('+value+');\n';
 	}
 	else if(typeof value === 'string'){
@@ -343,31 +345,26 @@ function makeObjectInstance(value){
 	}
 };
 
-// var replaceCustomFuncs = function replaceCustomFuncs(stack){
-// 	var temp;
-// 	for(var i = 0; i < stack.length; i++){
-// 		console.log(DEFINED)
-// 		if(stack[i].data.type === 'custom' && 
-// 			DEFINED[stack[i].data.value] === undefined){
-// 			stack[i] = functions[stack[i].data.value](stack[i]);
-// 		} 
-// 		if(stack[i].children.length){
-// 			for(var k = 0, l = stack[i].children.length; k < l; k++){
-// 				stack[i].children[k] = recurse(stack[i].children[k]);
-// 			}
-// 		}
-// 	}
-// 	return stack;
+function getType(val){
+	if(parseInt(val) === parseInt(val)){
+		return 'number';
+	}
+	else {
+		return typeof val;
+	}
+}
 
-// 	function recurse(tree){
-// 		if(tree.data.type === 'custom'){
-// 			tree = functions[tree.data.value](tree);
-// 		}
-// 		if(tree.children.length){
-// 			for(var i = 0, l = tree.children.length; i < l; i++){
-// 				tree.children[i] = recurse(tree.children[i], root);
-// 			}
-// 		}
-// 		return tree;
-// 	};
-// };
+function trim(str){
+	return str.replace(' ', '', 'g');
+}
+
+function printList(arr){
+	var result = '';
+	for(var i = 0; i < arr.length; i++){
+		result += arr[i];
+		if(i < arr.length-1){
+			result += ', ';
+		}
+	}
+	return result;
+}

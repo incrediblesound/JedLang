@@ -21,7 +21,21 @@ Output
 Functions
 ---------
 
-Define a function with def. The def command goes like this:
+Core functions:
++ : add -> (X, Y) returns sum    
+- : sub -> (X, Y) returns difference    
+* : mult -> (X, Y) returns product    
+/ : div -> (X, Y) divides X and Y    
+@ : show -> (X) prints value of X to console    
+^ : prepend -> (X, Y) prepends X onto Y, where Y is an array    
+_ : member -> (X, Y) returns member of set Y at index X    
+> : greater -> (X, Y) returns true if X is greater than Y    
+< : less -> (X, Y) returns true if X is less than Y    
+? : condition -> (X, Y, Z) returns Y if X is true, otherwise returns Z    
+| : identity -> (X) returns X    
+. : length -> (X) returns length of X, where X is an array or a set    
+
+Define a custom function with def. The def command goes like this:
 
 ```shell
 (def <name> <arguments> <function body>)
@@ -57,18 +71,34 @@ Lets tack the average on for good measure:
 (def all X (^ (avg X) (tot X)))
 (@(all [1,2,3,4])) //=> [2.5,10,1,2,3,4]
 ```
+Sets
+----
+
+Sets are not sets in the mathematical sense, they are just groupings of mixed type values. Sets can have set members:
+
+```shell
+(set james {"James", 31, "Developer"})
+(set mary {"Mary", 29, "Architect"})
+(set john {"John", 25, "Intern"})
+(set employees {james, mary, john})
+
+(def fst X (_ 0 X))
+(def lst X (_ (- (. X) 1) X))
+(def job X Y (@ (lst (_ X Y))))
+
+(@ (_ 0 (fst employees))) //=> "James"
+(job (- (. employees) 1) employees) //=> "Intern"
+```
 
 Booleans
 --------
-Of course there are booleans:
+There are functions that output booleans:
 ```shell
 (@ (> 4 3)) //=> True
 (@ (< 1 0)) //=> False
 ```
 And a conditional function that takes a boolean function as its first argument:
 ```shell
-(? <boolean func> <return if true> <return if false>)
-
 (@ (? (> (avg [1,2,3,4]) 1) 10 0)) //=> 10
 
 (def wow X Y (? (> X Y) (@ "wham") (@ "whoozle")))

@@ -37,34 +37,25 @@ module.exports = function(){
 		idx: function(){
 			return this.body[this.i];
 		},
-		take: function(num){
-			var temp = this.i;
-			this.i += num;
-			return this.body.slice(temp, this.i);
-		},
-		take_name: function(){
-			var name = '';
-			this.next();
-			while(letters.contains(this.idx())){
-				name += this.idx();
-				this.incr();
-			}
-			return name;
-		},
 		next: function(){
 			while(this.idx() === ' '){
 				this.incr();
 			}
 			return this.idx();
 		},
-		take_next: function(){
+		next_word: function(){
 			var name = '';
-			this.next();
-			while(anyChar.contains(this.idx()) && this.idx() !== ')'){
-				name += this.idx();
-				this.incr();
+			var k = this.i;
+			while(letters.contains(this.body[k])){
+				name += this.body[k];
+				++k;
 			}
 			return name;
+		},
+		take: function(num){
+			var temp = this.i;
+			this.i += num;
+			return this.body.slice(temp, this.i);
 		},
 		take_args: function(){
 			var args = [];
@@ -77,14 +68,16 @@ module.exports = function(){
 			}
 			return args;
 		},
-		next_word: function(){
-			var name = '';
-			var k = this.i;
-			while(letters.contains(this.body[k])){
-				name += this.body[k];
-				++k;
+		take_brackets: function(){
+			this.next();
+			this.incr();
+			var string = '';
+			while(this.idx() !== '}'){
+				string += this.idx();
+				this.incr();
 			}
-			return name;
+			this.incr();
+			return string.split(',');
 		},
 		take_func: function(){
 			this.next();
@@ -102,6 +95,24 @@ module.exports = function(){
 				this.incr();
 			}
 			return name;
-		}
+		},
+		take_name: function(){
+			var name = '';
+			this.next();
+			while(letters.contains(this.idx())){
+				name += this.idx();
+				this.incr();
+			}
+			return name;
+		},
+		take_next: function(){
+			var name = '';
+			this.next();
+			while(anyChar.contains(this.idx()) && this.idx() !== ')'){
+				name += this.idx();
+				this.incr();
+			}
+			return name;
+		},
 	};	
 }

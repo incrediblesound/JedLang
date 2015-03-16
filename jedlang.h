@@ -6,6 +6,7 @@ union Data {
 	float f;
 	char *s;
 	int *ia;
+	struct Object *oa;
 };
 
 struct Object { 
@@ -78,7 +79,27 @@ struct Object getInt(struct Object obj){
 	}
 };
 
+struct Object getFloat(struct Object obj){
+	union Data d;
+	if(obj.type == 'f'){
+		return createFloat(obj.dat.f);
+	}
+	else {
+		return createFloat(obj.dat.ia[0]);
+	}
+};
 
+struct Object member(struct Object num, struct Object b){
+	int ni = num.dat.i;
+	return b.dat.oa[ni];
+};
+
+struct Object length(struct Object a){
+	union Data dat;
+	dat.i = a.length;
+	struct Object obj = {'i',0,dat};
+	return obj;
+};
 
 struct Object add(struct Object a, struct Object b){
 	if(a.type == 'i'){
@@ -100,9 +121,9 @@ struct Object sub(struct Object a, struct Object b){
 
 struct Object mult(struct Object a, struct Object b){
 	if(a.type == 'i'){
-		a.dat.i = (a.dat.i) * (b.dat.i);
+		a.dat.i = a.dat.i * b.dat.i;
 	} else {
-		a.dat.f = (a.dat.f) * (b.dat.f);
+		a.dat.f = a.dat.f * b.dat.f;
 	}
 	return a;
 };
@@ -121,9 +142,9 @@ struct Object greater(struct Object a, struct Object b){
 	struct Object obj = {'i',0, dt};
 
 	if(a.type == 'i'){
-		obj.dat.i = (a.dat.i) > (b.dat.i) ? 1 : 0;
+		obj.dat.i = a.dat.i > b.dat.i ? 1 : 0;
 	} else {
-		obj.dat.f = (a.dat.f) > (b.dat.f) ? 1 : 0;
+		obj.dat.f = a.dat.f > b.dat.f ? 1 : 0;
 	}
 	obj.type = 'b';
 	return obj;	
@@ -134,9 +155,9 @@ struct Object less(struct Object a, struct Object b){
 	struct Object obj = {'i',0, dt};
 
 	if(a.type == 'i'){
-		obj.dat.i = (a.dat.i) < (b.dat.i) ? 1 : 0;
+		obj.dat.i = a.dat.i < b.dat.i ? 1 : 0;
 	} else {
-		obj.dat.f = (a.dat.f) < (b.dat.f) ? 1 : 0;
+		obj.dat.f = a.dat.f < b.dat.f ? 1 : 0;
 	}
 	obj.type = 'b';
 	return obj;	
@@ -147,9 +168,16 @@ struct Object identity(struct Object a){
 };
 
 struct Object append(struct Object a, struct Object b){
-	b.length = b.length+1;
-	b.dat.ia[b.length-1] = a.dat.i;	
-	b.type = 'a';
+	int arr[b.length+1];
+	for(int i = 0; i < b.length+1; i++){
+		if(i < b.length){
+			arr[i] = b.dat.ia[i];
+		} else {
+			arr[i] = a.dat.i;
+		}
+	}
+	b.dat.ia = arr;
+	b.length = b.length + 1;
 	return b;
 };
 

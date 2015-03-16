@@ -1,0 +1,11 @@
+(set james {"James", 31, "Developer"})
+(set mary {"Mary", 29, "Architect"})
+(set john {"John", 25, "Intern"})
+(set dave {"Dave", 35, "Singer"})
+
+(set employees {james, mary, john, dave})
+
+(def thirty FLTR (> (_ 1 X) 30))
+(def name X (_ 0 X))
+(def second X (_ 1 X))
+(@ (name (second (thirty employees))))

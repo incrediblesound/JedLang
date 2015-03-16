@@ -11,6 +11,7 @@ module.exports = {
 		'<': 'less(',
 		'?': 'condition(',
 		'|': 'identity(',
-		'.': 'length('
+		'.': 'length(',
+		'=': 'equal('
 	}
 };

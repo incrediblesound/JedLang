@@ -43,6 +43,7 @@ struct Object show(struct Object obj){
 	}
 	return obj;
 };
+
 struct Object createInt(int num){
 	union Data d;
 	d.i = num;
@@ -139,27 +140,56 @@ struct Object div(struct Object a, struct Object b){
 
 struct Object greater(struct Object a, struct Object b){
 	union Data dt;
-	struct Object obj = {'i',0, dt};
+	struct Object obj = {'b',0, dt};
 
 	if(a.type == 'i'){
 		obj.dat.i = a.dat.i > b.dat.i ? 1 : 0;
 	} else {
 		obj.dat.f = a.dat.f > b.dat.f ? 1 : 0;
 	}
-	obj.type = 'b';
 	return obj;	
+};
+
+struct Object equal(struct Object a, struct Object b){
+	union Data dt;
+	struct Object obj = {'b',0, dt};
+	int isTrue;
+	if(a.type == 'i'){
+		obj.dat.i = a.dat.i == b.dat.i ? 1 : 0;
+	}
+	else if(a.type == 'f'){
+		obj.dat.i = a.dat.f == b.dat.f ? 1 : 0;
+	}
+	else if(a.type == 's'){
+		obj.dat.i = (strcmp(a.dat.s, b.dat.s) == 0) ? 1 : 0;
+	}
+	else if (a.type == 'o'){
+		isTrue = 1;
+		for(int i = 0; i < a.length; i++){
+			struct Object temp = equal(a.dat.oa[i], b.dat.oa[i]);
+			isTrue = (temp.dat.i == 1 && isTrue == 1) ? 1 : 0;
+		}
+		obj.dat.i = isTrue;
+	}
+	else if (a.type == 'a'){
+		isTrue = 1;
+		for(int i = 0; i < a.length; i++){
+			isTrue = (a.dat.ia[i] == b.dat.ia[i] && isTrue == 1) ? 1 : 0;
+		}
+		obj.dat.i = isTrue;
+	}
+	return obj;
 };
 
 struct Object less(struct Object a, struct Object b){
 	union Data dt;
-	struct Object obj = {'i',0, dt};
+	struct Object obj = {'b',0, dt};
 
 	if(a.type == 'i'){
 		obj.dat.i = a.dat.i < b.dat.i ? 1 : 0;
 	} else {
 		obj.dat.f = a.dat.f < b.dat.f ? 1 : 0;
 	}
-	obj.type = 'b';
 	return obj;	
 };
 
@@ -167,19 +197,38 @@ struct Object identity(struct Object a){
 	return a;
 };
 
-struct Object append(struct Object a, struct Object b){
-	int arr[b.length+1];
+struct Object set_append(struct Object a, struct Object b){
+	struct Object arr[b.length+1];
 	for(int i = 0; i < b.length+1; i++){
 		if(i < b.length){
-			arr[i] = b.dat.ia[i];
+			arr[i] = b.dat.oa[i];
 		} else {
-			arr[i] = a.dat.i;
+			arr[i] = a;
 		}
 	}
-	b.dat.ia = arr;
+	b.dat.oa = arr;
 	b.length = b.length + 1;
 	return b;
 };
+
+struct Object append(struct Object a, struct Object b){
+	if(a.type == 'o'){
+		return set_append(a, b);
+	} else {
+		int arr[b.length+1];
+		for(int i = 0; i < b.length+1; i++){
+			if(i < b.length){
+				arr[i] = b.dat.ia[i];
+			} else {
+				arr[i] = a.dat.i;
+			}
+		}
+		b.dat.ia = arr;
+		b.length = b.length + 1;
+		return b;
+	}
+};
+
 
 struct Object prepend(struct Object a, struct Object b){
 	b.length = b.length+1;

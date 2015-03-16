@@ -176,6 +176,9 @@ function createFuncDefs(stack){
 		else if(tree.data.action === 'ARRY'){
 			writeARRYFunc(tree);
 		}
+		else if(tree.data.action === 'FLTR'){
+			writeFLTRFunc(tree);
+		}
 		else {
 			var state = stateFactory();
 			state.body = tree.data.iterator;
@@ -209,7 +212,7 @@ function writeSetObject(tree){
 		'] = {'+printList(memberNames)+'};\n';
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
 	var objectName = variables.newVariable();
-	IN_SCOPE += 'struct Object '+objectName+' = {\'u\','+members.length+','+unionName+'};\n';
+	IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
 }
@@ -284,7 +287,26 @@ function writeARRYFunc(tree){
 	funcBody += '}\nreturn result;\n};\n';
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
-	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev);
+}
+
+function writeFLTRFunc(tree){
+	var startingPoint = IN_SCOPE_LEN.current;
+	var state = stateFactory();
+	state.body = tree.get('iterator');
+	var test = parser(state, [], DEFS)[0];
+	var name = tree.get('name');
+	var funcBody = '', argNames = [];
+	var funcName = variables.newVariable();
+	var head = 'struct Object '+funcName+'(struct Object arr){\n';
+	funcBody += 'union Data dat; struct Object *ptr; dat.oa = ptr; struct Object obj = {\'o\', 0, dat};\n';
+	funcBody += 'int count = 0;\nfor(int i = 0; i < arr.length; i++){\n';
+	funcBody += 'struct Object test = '+buildFunctions(test, '',['arr.dat.oa[i]'])+';\n';
+	funcBody += 'if(test.dat.i == 1){\nobj = set_append(arr.dat.oa[i],obj);\n}\n}\n';
+	funcBody += 'return obj;\n}\n';
+	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
+	PRE_MAIN += head + IN_SCOPE.substring(startingPoint, IN_SCOPE_LEN.current) + funcBody;
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev);
 }
 
 function insertVariableNames(tree, argNames){

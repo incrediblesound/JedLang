@@ -4,8 +4,9 @@ var Set = require('./set.js').Set;
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
 numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
-funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.']);
+funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
 patterns = new Set(['(',')','[',']','"']);
+special_funcs = new Set(['ARRY','REDC','FLTR']);
 custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
@@ -89,7 +90,7 @@ module.exports = function(state, stack, defs){
 				defn.set('name', name);
 				state.incr();
 				var special = state.chunk(4);
-				if(state.idx() !== ')' && (special === 'REDC' || special === 'ARRY')){
+				if(state.idx() !== ')' && special_funcs.contains(special)){
 					state.advance(4);
 					defn.set('action',special);
 					defn.set('iterator', state.take_func());

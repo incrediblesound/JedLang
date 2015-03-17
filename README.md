@@ -1,7 +1,7 @@
 JedLang
 =======
 
-JedLang is a crazy lisp-like languge that I made up for fun. It compiles to C.
+JedLang is a crazy lisp-like languge that I made up for fun. While it is not very readable, it is intended to be very terse and easy to use. It compiles to C.
 
 Lispy Math
 ----------

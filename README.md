@@ -150,7 +150,7 @@ Clone this repository and cd into the directory. Write a JedLang file and give i
 ```shell
 node parser.js <path/to/filename>
 ```
-The above command will create both filename.out and output.c. Running the code is just like running any other .out file, it is just compiled c code:
+The above command will create both filename.out and output.c, and it assumes you do not include the extension with the filename. Running the code is just like running any other .out file, it is just compiled c code:
 ```shell
 ./<filename>.out
 ```

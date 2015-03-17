@@ -2,21 +2,21 @@ var fs = require('fs');
 var Tree = require('./tree.js').Tree;
 var Set = require('./set.js').Set;
 var builder = require('./js-builder.js');
-var program = require('commander')
+var program = require('commander');
 var state = require('./state.js')();
 
 program.parse(process.argv);
 var body = fs.readFileSync('./'+program.args[0]+'.jhe').toString();
 state.body = body;
 
-letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
-LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
-numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
-funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
-special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
-patterns = new Set(['(',')','[',']','"']);
-custom = new Set([]);
-anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
+var letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
+var LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
+var numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
+var funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
+var special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
+var patterns = new Set(['(',')','[',']','"']);
+var custom = new Set([]);
+var anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
 var stack = [];
 
@@ -31,6 +31,8 @@ builder(stack, fileName, custom.data);
 
 function parser(state, stack){
 	while(state.i < l) {
+    var name;
+    
 		current = state.next();
 		if(anyChar.contains(current)){
 			if(current === '(' && state.chunk(4) !== '(def' && state.chunk(4) !== '(set'){
@@ -45,7 +47,7 @@ function parser(state, stack){
 				state.scope.set('value', current);
 			}
 			else if(custom.contains(state.next_word())){
-				var name = state.next_word();
+				name = state.next_word();
 				state.advance(name.length-1);
 				if(state.scope.get('type') !== undefined){
 					valNode = state.scope.insert();
@@ -87,7 +89,7 @@ function parser(state, stack){
 			}
 			else if(state.chunk(3) === 'def'){
 				current = state.advance(4);
-				var name = state.take_name();
+				name = state.take_name();
 				custom.add(name);
 				current = state.idx();
 				var defn = new Tree();
@@ -116,7 +118,7 @@ function parser(state, stack){
 			}
 			else if(state.chunk(3) === 'set'){
 				current = state.advance(4);
-				var name = state.take_name();
+				name = state.take_name();
 				custom.add(name);
 				current = state.idx();
 				var defset = new Tree();
@@ -130,4 +132,4 @@ function parser(state, stack){
 		state.incr();
 	}
 	return stack;
-};
+}

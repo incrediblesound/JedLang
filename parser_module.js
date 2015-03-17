@@ -1,19 +1,21 @@
 var Tree = require('./tree.js').Tree;
 var Set = require('./set.js').Set;
 
-letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
-LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
-numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
-funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
-patterns = new Set(['(',')','[',']','"']);
-special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
-custom = new Set([]);
-anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
+var letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
+var LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
+var numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
+var funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
+var patterns = new Set(['(',')','[',']','"']);
+var special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
+var custom = new Set([]);
+var anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
 module.exports = function(state, stack, defs){
 	//have to import custom function names from initial parsing step
 	custom.setData(defs);
 	while(state.i < state.body.length) {
+		var name, current;
+
 		current = state.next();
 		if(anyChar.contains(current)){
 			if(current === '(' && state.chunk(4) !== '(def' && state.chunk(4) !== '(set'){
@@ -28,7 +30,7 @@ module.exports = function(state, stack, defs){
 				state.scope.set('value', current);
 			}
 			else if(custom.contains(state.next_word())){
-				var name = state.next_word();
+				name = state.next_word();
 				state.advance(name.length-1);
 				if(state.scope.get('type') !== undefined){
 					valNode = state.scope.insert();
@@ -82,7 +84,7 @@ module.exports = function(state, stack, defs){
 			}
 			else if(state.chunk(3) === 'def'){
 				current = state.advance(4);
-				var name = state.take_name();
+				name = state.take_name();
 				custom.add(name);
 				current = state.idx();
 				var defn = new Tree();
@@ -111,7 +113,7 @@ module.exports = function(state, stack, defs){
 			}
 			else if(state.chunk(3) === 'set'){
 				current = state.advance(4);
-				var name = state.take_name();
+				name = state.take_name();
 				custom.add(name);
 				current = state.idx();
 				var defset = new Tree();

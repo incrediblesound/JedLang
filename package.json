@@ -2,7 +2,7 @@
   "name": "JedLang",
   "version": "1.0.0",
   "description": "A pretty cool language, huh?",
-  "main": "parse.js",
+  "main": "parser.js",
   "scripts": {
     "test": ""
   },

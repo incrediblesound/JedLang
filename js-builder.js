@@ -235,7 +235,6 @@ function writeCustomFuncs(tree, definition){
 		} else { head += '){\n';}
 	}
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
-	// tree = insertVariableNames(tree, argNames);
 	var result = variables.newVariable();
 	funcBody += 'struct Object '+result+' = '+buildFunctions(tree, '', argNames)+';\n';
 	funcBody += 'return '+result+';\n};\n';
@@ -333,28 +332,6 @@ function writeEACHFunc(tree){
 	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
 }
-
-function insertVariableNames(tree, argNames){
-	tree = changeVar(tree);
-	return tree;
-
-	function changeVar(tree){
-		var placeholders = ['X','Y','Z'];
-		if(tree.get('type') === 'value'){
-			for(var i = 0; i < placeholders.length; i++){
-				if(tree.get('value') === placeholders[i]){
-					tree.get('value') = argNames[i];
-				}
-			}
-		}
-		if(tree.size()){
-			for(var k = 0; k < tree.size(); k++){
-				changeVar(tree.children[k]);
-			}
-		}
-		return tree;
-	}
-};
 
 function argNameText(array, inner){
 	var result = '';

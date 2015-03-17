@@ -30,7 +30,8 @@ Core functions:
 ^  (X, Y) -> prepends X onto Y, where Y is an array    
 _  (X, Y) -> returns member of set Y at index X    
 \> (X, Y) -> returns true if X is greater than Y    
-<  (X, Y) -> returns true if X is less than Y    
+<  (X, Y) -> returns true if X is less than Y   
+=  (X, Y) -> returns true if X equals Y    
 ?  (X, Y, Z) -> returns Y if X is true, otherwise returns Z    
 |  (X) -> returns X    
 .  (X) -> returns length of X, where X is an array or a set    
@@ -42,13 +43,18 @@ Define a custom function with def. The def command goes like this:
 ```
 Make sure to use X Y or Z for you argument names, they correspond to the first, second and third arguments of a function invocation.    
 
-There is another kind of def that uses some core functions, for now there is reduce (REDC) and array (ARRY). They are used like this:
+There is another kind of custom function that uses core functions. There is reduce (REDC), array (ARRY), filter (FLTR) and each (EACH).    
+    
+They are used like this:
 
 ```shell
 (def <name> REDC <iterator>) // takes an array as input
 (def <name> ARRY <iterator>) // takes a number of iterations and (X) element to iterate
+(def <name> FLTR <test>) // takes a boolean function and a set (X) to iterate over
+(def <name> EACH <iterator>) // takes an array or set (X) as input
 ```
-The iterator in REDC can take a lowercase letter to stand in for the element at the current index during iteration. The iterator in ARRY can take uppercase letters to stand for the arguments used to invoke the function. For example:
+The iterator in REDC can take a lowercase letter to stand in for the element at the current index during iteration. The other functions use X to stand for the arguments used to invoke the function. Here is a set of examples to demonstrate function definitions, not that definitions should always come at the top of a file, they are arranged here differently for purposes of demonstration. For working examples look in the examples directory of this repo.
+
 ```shell
 (def sum REDC (+ e))
 (@ (sum [1,2,3,4])) //=> 10
@@ -60,16 +66,32 @@ The iterator in REDC can take a lowercase letter to stand in for the element at 
 
 (def avg X (/ sum len))
 (@ (avg (count 4 0))) //=> 2.5
-```
-This one appends the sum of an array onto the beginning of the array:
-```shell
+
 (def tot X (^ (sum X) X))
 (@ (tot [1,2,3,4])) //=> [10,1,2,3,4]
-```
-Lets tack the average on for good measure:
-```shell
 (def all X (^ (avg X) (tot X)))
 (@(all [1,2,3,4])) //=> [2.5,10,1,2,3,4]
+```
+
+Filter can only be used on sets:
+```shell
+(set plant1 {"healthy", 31})
+(set plant2 {"healthy", 9})
+(set plant3 {"unhealthy", 13})
+(set plants {plant1, plant2, plant3})
+(def healthy FLTR (= (_ 0 X) "healthy")) //=> returns a set of {plant1, plant2}
+```
+Each can be used with both arrays and sets:
+```shell
+(set jim {"James" 23})
+(set bob {"Bob" 21})
+(set dan {"Dan" 25})
+(set employees {jim bob dan})
+(def incr EACH (+ X 1))
+(def see EACH (@ (_ 0 X)))
+
+(see employees) //=> James Bob Dan
+(@(incr [1,2,3,4,5,6])) //=> [2, 3, 4, 5, 6, 7]
 ```
 Sets
 ----
@@ -96,8 +118,18 @@ There are functions that output booleans:
 ```shell
 (@ (> 4 3)) //=> True
 (@ (< 1 0)) //=> False
+(@ (= 1 1)) //=> True
 ```
-And a conditional function that takes a boolean function as its first argument:
+The equality operator checks arrays and sets to see if the all members are equal:
+```shell
+(set james {"James" "Edwards"})
+(set jim {"James" "Bergson"})
+
+(@ (= [1,2,4,3] [1,2,3,4])) //=> False
+(@ (= james jim)) //=> False
+```
+
+The conditional function takes a boolean function as its first argument:
 ```shell
 (@ (? (> (avg [1,2,3,4]) 1) 10 0)) //=> 10
 

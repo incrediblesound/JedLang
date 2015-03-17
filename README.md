@@ -145,11 +145,12 @@ The conditional function can return functions, as in the two print functions abo
 
 USE
 ---
-
-Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
+Clone this repository and cd into the directory. Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
 
 ```shell
 node parser.js <path/to/filename>
-
+```
+The above command will create both filename.out and output.c. Running the code is just like running any other .out file, it is just compiled c code:
+```shell
 ./<filename>.out
 ```

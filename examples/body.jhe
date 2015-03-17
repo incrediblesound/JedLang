@@ -1,2 +1,10 @@
-(def avg X (/ X X))
-(def lum X Y (+(avg X) 4))
+(set james {"James", 31, "Developer"})
+(set mary {"Mary", 29, "Architect"})
+(set john {"John", 25, "Intern"})
+(set dave {"Dave", 35, "Singer"})
+(set employees {james, mary, john, dave})
+
+(def incr EACH (+ X 1))
+(def see EACH (@ (_ 0 X)))
+(see employees)
+(@(incr [1,2,3,4,5,6]))

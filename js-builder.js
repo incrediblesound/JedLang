@@ -170,14 +170,17 @@ function createFuncDefs(stack){
 		if(tree.get('type') === 'setdef'){
 			writeSetObject(tree);
 		}
-		else if(tree.data.action === 'REDC'){
+		else if(tree.get('action') === 'REDC'){
 			writeREDCFunc(tree);
 		}
-		else if(tree.data.action === 'ARRY'){
+		else if(tree.get('action') === 'ARRY'){
 			writeARRYFunc(tree);
 		}
-		else if(tree.data.action === 'FLTR'){
+		else if(tree.get('action') === 'FLTR'){
 			writeFLTRFunc(tree);
+		}
+		else if(tree.get('action') === 'EACH'){
+			writeEACHFunc(tree);
 		}
 		else {
 			var state = stateFactory();
@@ -306,7 +309,29 @@ function writeFLTRFunc(tree){
 	funcBody += 'return obj;\n}\n';
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(startingPoint, IN_SCOPE_LEN.current) + funcBody;
-	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev);
+	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
+}
+
+function writeEACHFunc(tree){
+	var startingPoint = IN_SCOPE_LEN.current;
+	var state = stateFactory();
+	state.body = tree.get('iterator');
+	var iterator = parser(state, [], DEFS)[0];
+	var name = tree.get('name');
+	var funcBody = '', argNames = [];
+	var funcName = variables.newVariable();
+	var head = 'struct Object '+funcName+'(struct Object arr){\n';
+	funcBody += 'for(int i=0;i<arr.length;i++){\nif(arr.type == \'a\'){\n'
+	funcBody += 'union Data dt; dt.i = arr.dat.ia[i]; struct Object temp = {\'i\', 0, dt};\n'
+	funcBody += 'arr.dat.ia[i] = '+buildFunctions(iterator,'',['temp'])+'.dat.i ;}'
+	funcBody += 'else if(arr.type == \'o\'){\n'
+	funcBody += 'arr.dat.oa[i] = '+buildFunctions(iterator,'',['arr.dat.oa[i]'])+'; } }\n'
+	funcBody += 'return arr; };\n';
+	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
+	PRE_MAIN += head + IN_SCOPE.substring(startingPoint, IN_SCOPE_LEN.current) + funcBody;
+	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
 }
 
 function insertVariableNames(tree, argNames){

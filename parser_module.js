@@ -6,7 +6,7 @@ LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','
 numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
 funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=']);
 patterns = new Set(['(',')','[',']','"']);
-special_funcs = new Set(['ARRY','REDC','FLTR']);
+special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
 custom = new Set([]);
 anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 

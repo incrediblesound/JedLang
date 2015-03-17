@@ -1,3 +1,4 @@
 (set james {"James", 31, "Developer"})
 (set mary {"Mary", 29, "Architect"})
 (@ (= james james))
+(@ (= james mary))

@@ -1,7 +1,8 @@
 {
   "name": "jedlang",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A functional style language that compiles to C",
+  "repository": "https://github.com/incrediblesound/JedLang",
   "main": "parser.js",
   "scripts": {
     "test": ""

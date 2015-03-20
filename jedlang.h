@@ -181,6 +181,37 @@ struct Object equal(struct Object a, struct Object b){
 	return obj;
 };
 
+struct Object not_equal(struct Object a, struct Object b){
+	union Data dt;
+	struct Object obj = {'b',0, dt};
+	int isTrue;
+	if(a.type == 'i'){
+		obj.dat.i = a.dat.i != b.dat.i ? 1 : 0;
+	}
+	else if(a.type == 'f'){
+		obj.dat.i = a.dat.f != b.dat.f ? 1 : 0;
+	}
+	else if(a.type == 's'){
+		obj.dat.i = (strcmp(a.dat.s, b.dat.s) != 0) ? 1 : 0;
+	}
+	else if (a.type == 'o'){
+		isTrue = 1;
+		for(int i = 0; i < a.length; i++){
+			struct Object temp = not_equal(a.dat.oa[i], b.dat.oa[i]);
+			isTrue = (temp.dat.i == 1 && isTrue == 1) ? 1 : 0;
+		}
+		obj.dat.i = isTrue;
+	}
+	else if (a.type == 'a'){
+		isTrue = 0;
+		for(int i = 0; i < a.length; i++){
+			isTrue = (a.dat.ia[i] == b.dat.ia[i] && isTrue == 0) ? 0 : 1;
+		}
+		obj.dat.i = isTrue;
+	}
+	return obj;
+};
+
 struct Object less(struct Object a, struct Object b){
 	union Data dt;
 	struct Object obj = {'b',0, dt};

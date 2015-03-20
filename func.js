@@ -12,6 +12,7 @@ module.exports = {
 		'?': 'condition(',
 		'|': 'identity(',
 		'.': 'length(',
-		'=': 'equal('
+		'=': 'equal(',
+		'!': 'not_equal('
 	}
 };

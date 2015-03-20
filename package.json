@@ -1,7 +1,7 @@
 {
-  "name": "JedLang",
-  "version": "1.0.0",
-  "description": "A pretty cool language, huh?",
+  "name": "jedlang",
+  "version": "0.1",
+  "description": "A functional style language that compiles to C",
   "main": "parser.js",
   "scripts": {
     "test": ""

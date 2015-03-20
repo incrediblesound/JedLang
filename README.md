@@ -32,6 +32,7 @@ _  (X, Y) -> returns member of set Y at index X
 \> (X, Y) -> returns true if X is greater than Y    
 <  (X, Y) -> returns true if X is less than Y   
 =  (X, Y) -> returns true if X equals Y    
+!  (X, Y) -> returns true if X doesn't equal Y
 ?  (X, Y, Z) -> returns Y if X is true, otherwise returns Z    
 |  (X) -> returns X    
 .  (X) -> returns length of X, where X is an array or a set    

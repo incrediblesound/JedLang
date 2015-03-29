@@ -36,7 +36,6 @@ function parser(state, stack){
 		current = state.next();
 		if(anyChar.contains(current)){
 			if(current === '(' && state.chunk(4) !== '(def' && state.chunk(4) !== '(set'){
-				console.log('YEAH', state.scope)
 				if(state.scope === null){
 					state.scope = new Tree();
 				} else {

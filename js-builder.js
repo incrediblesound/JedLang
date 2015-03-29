@@ -79,7 +79,9 @@ function makeStringObject(str){
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	var charName = variables.newVariable();
-	IN_SCOPE += 'char '+charName+'['+(str.length-1)+'] = {'+stringToArray(str)+'};\n';
+	IN_SCOPE += 'char *'+charName+';\n';
+	IN_SCOPE += ''+charName+' = (char *) malloc(sizeof(char) * '+(str.length-1)+');\n';
+	IN_SCOPE += 'strcpy('+charName+', '+str+');\n';
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
 	IN_SCOPE += 'struct Object '+structName+' = {\'s\','+(str.length-1)+','+unionName+'};\n';
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
@@ -208,6 +210,7 @@ function createFuncDefs(stack){
 };
 
 function writeSetObject(tree){
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var members = tree.get('value');
 	var memberNames = [], name;
 	for(var i = 0, l = members.length; i < l; i++){
@@ -225,14 +228,19 @@ function writeSetObject(tree){
 	}
 	var objectArrName = variables.newVariable();
 	var unionName = variables.newVariable();
-	IN_SCOPE += 'struct Object '+objectArrName+'['+members.length+
-		'] = {'+printList(memberNames)+'};\n';
+	IN_SCOPE += 'struct Object *'+objectArrName+';\n';
+	IN_SCOPE += ''+objectArrName+' = (struct Object *) malloc(sizeof(struct Object) * '+members.length+');\n';
+	for(var i = 0; i < members.length; i++){
+		IN_SCOPE += objectArrName+'['+i+'] = '+memberNames[i]+';\n';	
+	}
+
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
 	var objectName = variables.newVariable();
 	IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
 	DECLARATIONS += 'struct Object '+objectName+';\n';
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
+	DEFINED[tree.get('name')].definition = IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE.length);
 };
 
 function writeClassObject(tree){
@@ -254,15 +262,23 @@ function writeCLASSFunc(tree){
 		if(LETTERS.contains(arg)){
 			funcBody += 'struct Object '+arg;
 		}
-		if(DEFINED[arg] !== undefined){
-			iterator[i] = DEFINED[arg].name;
-		}
 		if(i !== iterator.length-1 && DEFINED[iterator[i+1]] === undefined){
 			funcBody+=', ';
 		}
 	}
 	funcBody += '){\n';
-	funcBody += 'struct Object obj_arr['+iterator.length+'] = {'+printList(iterator)+'};';
+	for(var k = 0; k < iterator.length; k++){
+		if(DEFINED[iterator[k]] !== undefined){
+			funcBody += DEFINED[iterator[k]].definition;
+			iterator[k] = DEFINED[iterator[k]].name;
+		}
+	}
+	funcBody += ';\n';
+	funcBody += 'struct Object *obj_arr;\n'
+	funcBody += 'obj_arr = (struct Object *) malloc(sizeof(struct Object) * '+iterator.length+');\n';
+	for(var i = 0; i < iterator.length; i++){
+		funcBody += 'obj_arr['+i+'] = '+iterator[i]+';\n';	
+	}
 	funcBody += 'union Data arr_union; arr_union.oa = obj_arr;\n';
 	funcBody += 'struct Object jed_obj = {\'o\','+iterator.length+',arr_union};\n';
 	funcBody += 'return jed_obj;\n}\n';
@@ -431,7 +447,16 @@ function getType(val){
 }
 
 function trim(str){
-	return str.replace(' ', '', 'g');
+	if(str[0] === ' '){
+		str = str.substring(1, str.length);
+	}
+	if(str[str.length-1] === ' '){
+		str = str.substring(0, str.length-1);
+	}
+	if(str[0] === ' ' || str[str.length-1] === ' '){
+		return trim(str);
+	}
+	return str;
 }
 
 function stringToArray(str){

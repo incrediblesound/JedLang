@@ -226,18 +226,22 @@ function writeSetObject(tree){
 			}
 		}
 	}
-	var objectArrName = variables.newVariable();
-	var unionName = variables.newVariable();
-	IN_SCOPE += 'struct Object *'+objectArrName+';\n';
-	IN_SCOPE += ''+objectArrName+' = (struct Object *) malloc(sizeof(struct Object) * '+members.length+');\n';
-	for(var i = 0; i < members.length; i++){
-		IN_SCOPE += objectArrName+'['+i+'] = '+memberNames[i]+';\n';	
-	}
+	if(members.length !== 1){
+		var objectArrName = variables.newVariable();
+		var unionName = variables.newVariable();
+		IN_SCOPE += 'struct Object *'+objectArrName+';\n';
+		IN_SCOPE += ''+objectArrName+' = (struct Object *) malloc(sizeof(struct Object) * '+members.length+');\n';
+		for(var i = 0; i < members.length; i++){
+			IN_SCOPE += objectArrName+'['+i+'] = '+memberNames[i]+';\n';	
+		}
 
-	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
-	var objectName = variables.newVariable();
-	IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
-	DECLARATIONS += 'struct Object '+objectName+';\n';
+		IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
+		var objectName = variables.newVariable();
+		IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
+		DECLARATIONS += 'struct Object '+objectName+';\n';
+	} else {
+		var objectName = memberNames[0];
+	}
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
 	DEFINED[tree.get('name')].definition = IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE.length);
@@ -261,9 +265,14 @@ function writeCLASSFunc(tree){
 		arg = iterator[i];
 		if(LETTERS.contains(arg)){
 			funcBody += 'struct Object '+arg;
-		}
-		if(i !== iterator.length-1 && DEFINED[iterator[i+1]] === undefined){
-			funcBody+=', ';
+			if(i !== iterator.length-1 && LETTERS.contains(iterator[i+1])){
+				funcBody+=', ';
+			}
+		} else {
+			var tree = new Tree();
+			tree.set('name', arg);
+			tree.set('value', [arg]);
+			writeSetObject(tree);
 		}
 	}
 	funcBody += '){\n';

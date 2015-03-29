@@ -94,25 +94,6 @@ Each can be used with both arrays and sets:
 (see employees) //=> James Bob Dan
 (@(incr [1,2,3,4,5,6])) //=> [2, 3, 4, 5, 6, 7]
 ```
-Sets
-----
-
-Sets are not sets in the mathematical sense, they are just groupings of mixed type values. Sets can have set members:
-
-```shell
-(set james {"James", 31, "Developer"})
-(set mary {"Mary", 29, "Architect"})
-(set john {"John", 25, "Intern"})
-(set employees {james, mary, john})
-
-(def fst X (_ 0 X))
-(def lst X (_ (- (. X) 1) X))
-(def job X Y (@ (lst (_ X Y))))
-
-(@ (_ 0 (fst employees))) //=> "James"
-(job (- (. employees) 1) employees) //=> "Intern"
-```
-
 Booleans
 --------
 There are functions that output booleans:
@@ -142,6 +123,44 @@ The conditional function can return functions, as in the two print functions abo
 ```shell
 (def low X (? (> X 0) 1 0))
 (def fib X (? (< X 3) (low X) (+ (fib (- X 1)) (fib (- X 2)))))
+```
+Sets
+----
+
+Sets are not sets in the mathematical sense, they are just groupings of mixed type values. Sets can have set members:
+
+```shell
+(set james {"James", 31, "Developer"})
+(set mary {"Mary", 29, "Architect"})
+(set john {"John", 25, "Intern"})
+(set employees {james, mary, john})
+
+(def fst X (_ 0 X))
+(def lst X (_ (- (. X) 1) X))
+(def job X Y (@ (lst (_ X Y))))
+
+(@ (_ 0 (fst employees))) //=> "James"
+(job (- (. employees) 1) employees) //=> "Intern"
+```
+
+CLASSES
+-------
+Classes are basically just functions that return sets. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function.
+
+The following is an example taken directly from example file #10 in the examples directory, another example may be found in example file #9.
+```shell
+// camellia is a plant with genus camellia and species X
+(def cmlia CLSS { "camellia", X})
+
+// teacea is a plant of family Teaceae and genus/species pair X
+(def teaceae CLSS { "Teaceae", X})
+
+// make a tea object, i.e. { "camellia", "sinensis" }
+(set tea (cmlia "sinensis"))
+
+// make a full tea object { "Teaceae", { "camellia", "sinensis" }}
+(set tea_full (teaceae tea))
+(@ (_ 0 tea_full)) //=> "Teacea"
 ```
 
 USE

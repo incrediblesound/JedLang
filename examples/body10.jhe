@@ -1,0 +1,5 @@
+(def cmlia CLSS { "camellia", X })
+(def teaceae CLSS { "Teaceae", X })
+(set tea (cmlia "sinensis"))
+(set tea_full (teaceae tea))
+(@ (_ 0 tea_full))

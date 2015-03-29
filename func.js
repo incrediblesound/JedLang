@@ -3,7 +3,7 @@ module.exports = {
 		'+': 'add(', 
 		'-': 'sub(', 
 		'*': 'mult(', 
-		'/': 'div(', 
+		'/': 'divide(', 
 		'@': 'show(',
 		'^': 'prepend(',
 		'_': 'member(',
@@ -13,6 +13,6 @@ module.exports = {
 		'|': 'identity(',
 		'.': 'length(',
 		'=': 'equal(',
-		'!': 'not_equal('
+		'!': 'not_equal(',
 	}
 };

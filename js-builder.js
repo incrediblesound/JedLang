@@ -44,6 +44,10 @@ var variables = {
 };
 
 module.exports = function(stack, name, funcdefs){
+	// for(var i = 0; i < stack.length; i++){
+	// 	console.log('stack '+i, stack[i]);
+	// 	console.log('stack '+i+' chldrn', stack[i].children)
+	// }
 	DEFS = funcdefs;
 	var command;
 	var result = '';
@@ -53,7 +57,7 @@ module.exports = function(stack, name, funcdefs){
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};';
+	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};\n';
 	fs.writeFileSync('output.c', result);
 	exec('gcc output.c -o '+name+'.out', function(err){
 		if(err) console.log(err);
@@ -63,7 +67,6 @@ module.exports = function(stack, name, funcdefs){
 };
 
 function makeIntObject(num){
-	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
@@ -73,20 +76,17 @@ function makeIntObject(num){
 };
 
 function makeStringObject(str){
-	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	var charName = variables.newVariable();
-	IN_SCOPE += 'char '+charName+'['+(str.length+1)+'];\n';
-	IN_SCOPE += 'strcpy('+charName+','+str+');\n';
+	IN_SCOPE += 'char '+charName+'['+(str.length-1)+'] = {'+stringToArray(str)+'};\n';
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
-	IN_SCOPE += 'struct Object '+structName+' = {\'s\','+(str.length+1)+','+unionName+'};\n';
+	IN_SCOPE += 'struct Object '+structName+' = {\'s\','+(str.length-1)+','+unionName+'};\n';
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
 	return structName;
 };
 
 function makeArrayObject(arr){
-	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	var structName = variables.newVariable();
 	var unionName = variables.newVariable();
 	var arrName = variables.newVariable();
@@ -111,7 +111,15 @@ function buildFunctions(tree, result, argNames){
 		result += makeArrayObject(tree.get('value'));
 	}
 	else if(tree.get('type') === 'custom' && DEFINED[tree.get('value')] !== undefined){
-		if(DEFINED[tree.get('value')].type === 'function'){
+		if(DEFINED[tree.get('value')].type === 'function' ||
+			DEFINED[tree.get('value')].type === 'class'){
+
+			if(DEFINED[tree.get('value')].type === 'class'){
+				// if the function is a class, we need to save the result in a set object
+				var objectName = variables.newVariable();
+				result += 'struct Object '+objectName+' = ';
+				DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
+			}
 			result += DEFINED[tree.get('value')].name + '(';
 			for(var i = 0; i < tree.size(); i++){
 				result = buildFunctions(tree.children[i], result, argNames);
@@ -168,7 +176,11 @@ function createFuncDefs(stack){
 		  stack[0].get('type') === 'setdef')){
 		var tree = stack.shift();
 		if(tree.get('type') === 'setdef'){
-			writeSetObject(tree);
+			if(!tree.children.length){
+				writeSetObject(tree);
+			} else {
+				writeClassObject(tree);
+			}
 		}
 		else if(tree.get('action') === 'REDC'){
 			writeREDCFunc(tree);
@@ -182,11 +194,13 @@ function createFuncDefs(stack){
 		else if(tree.get('action') === 'EACH'){
 			writeEACHFunc(tree);
 		}
+		else if(tree.get('action') === 'CLSS'){
+			writeCLASSFunc(tree);
+		}
 		else {
 			var state = stateFactory();
 			state.body = tree.data.iterator;
 			var result = parser(state, [], DEFS)[0];
-			// functions[tree.data.name] = fillVariables(result);
 			writeCustomFuncs(result, tree);
 		}
 	}
@@ -216,8 +230,43 @@ function writeSetObject(tree){
 	IN_SCOPE += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
 	var objectName = variables.newVariable();
 	IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
+	DECLARATIONS += 'struct Object '+objectName+';\n';
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
+};
+
+function writeClassObject(tree){
+	var objectName = variables.newVariable();
+	var definition = buildFunctions(tree.children[0],'')+';\n';
+	IN_SCOPE += 'struct Object '+objectName + ' = '+definition;
+	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
+}
+
+function writeCLASSFunc(tree){
+	var iterator = tree.get('iterator');
+	var funcName = variables.newVariable();
+	DEFINED[tree.get('name')] = {name: funcName, type: 'class'};
+	var arg, funcs = [];
+	var funcBody = 'struct Object '+funcName+'(';
+	for(var i = 0; i < iterator.length; i++){
+		arg = iterator[i];
+		if(LETTERS.contains(arg)){
+			funcBody += 'struct Object '+arg;
+		}
+		if(DEFINED[arg] !== undefined){
+			iterator[i] = DEFINED[arg].name;
+		}
+		if(i !== iterator.length-1 && DEFINED[iterator[i+1]] === undefined){
+			funcBody+=', ';
+		}
+	}
+	funcBody += '){\n';
+	funcBody += 'struct Object obj_arr['+iterator.length+'] = {'+printList(iterator)+'};';
+	funcBody += 'union Data arr_union; arr_union.oa = obj_arr;\n';
+	funcBody += 'struct Object jed_obj = {\'o\','+iterator.length+',arr_union};\n';
+	funcBody += 'return jed_obj;\n}\n';
+	PRE_MAIN += funcBody;
 }
 
 function writeCustomFuncs(tree, definition){
@@ -241,6 +290,7 @@ function writeCustomFuncs(tree, definition){
 	var placeholders = ['X','Y','Z'];
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
 	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 	return;
 };
 
@@ -268,7 +318,8 @@ function writeREDCFunc(tree){
 	funcBody += '}\nreturn jed_obj;\n};\n';
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
-	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
+	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev);
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 };
 
 function writeARRYFunc(tree){
@@ -290,6 +341,7 @@ function writeARRYFunc(tree){
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
 	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev);
+	IN_SCOPE_LEN.prev = IN_SCOPE.length;
 }
 
 function writeFLTRFunc(tree){
@@ -380,6 +432,17 @@ function getType(val){
 
 function trim(str){
 	return str.replace(' ', '', 'g');
+}
+
+function stringToArray(str){
+	str = str.replace(/\"/g,'');
+	var result = '';
+	for(var i = 0; i < str.length; i++){
+		result += '\''+str[i]+'\'';
+		result += ', ';
+	}
+	result += '0';
+	return result;
 }
 
 function printList(arr){

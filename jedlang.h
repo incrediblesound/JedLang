@@ -41,8 +41,20 @@ struct Object show(struct Object obj){
 		}
 		printf("]\n");
 	}
+	else if(obj.type == 'd'){
+		printf("%s\n","{");
+		for(int i = 0; i < obj.length; ++i){
+			if(i < (obj.length-1)){
+				show(obj.dat.oa[i]);
+			} else {
+				show(obj.dat.oa[i]);
+			}
+		}
+		printf("%s\n","}");
+	}
 	return obj;
 };
+
 
 struct Object createInt(int num){
 	union Data d;
@@ -129,7 +141,7 @@ struct Object mult(struct Object a, struct Object b){
 	return a;
 };
 
-struct Object div(struct Object a, struct Object b){
+struct Object divide(struct Object a, struct Object b){
 	if(a.type == 'i'){
 		a.dat.i = a.dat.i / b.dat.i;
 	} else {

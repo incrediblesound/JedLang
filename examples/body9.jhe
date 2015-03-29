@@ -1,0 +1,6 @@
+(def name X (@ (_ 0 X)))
+(set soft_eng {"software engineer", "pay level 3"})
+(def employee CLSS { X, Y, soft_eng})
+(set james_age { 31 })
+(set james (employee "james" james_age))
+(name james)

@@ -46,11 +46,16 @@ module.exports = function(){
 		next_word: function(){
 			var name = '';
 			var k = this.i;
-			while(letters.contains(this.body[k])){
+			while(letters.contains(this.body[k]) || this.body[k] === '_'){
 				name += this.body[k];
 				++k;
 			}
 			return name;
+		},
+		next_paren: function(){
+			while(this.idx() !== '('){
+				this.incr();
+			}
 		},
 		take: function(num){
 			var temp = this.i;
@@ -79,8 +84,22 @@ module.exports = function(){
 			this.incr();
 			return string.split(',');
 		},
+		take_classdef: function(){
+			var name = '';
+			this.incr();
+			while(this.idx() !== '}'){
+				name += this.idx();
+				this.incr();
+			}
+			this.incr();
+			name = name.replace(/\s/g,'');
+			return name.split(',');
+		},
 		take_func: function(){
 			this.next();
+			if(this.idx() === '{'){
+				return this.take_classdef();
+			}
 			var open = 1;
 			var name = "(";
 			this.incr();
@@ -99,7 +118,7 @@ module.exports = function(){
 		take_name: function(){
 			var name = '';
 			this.next();
-			while(letters.contains(this.idx())){
+			while(letters.contains(this.idx()) || this.idx() === '_'){
 				name += this.idx();
 				this.incr();
 			}

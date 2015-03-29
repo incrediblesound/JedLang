@@ -12,14 +12,14 @@ state.body = body;
 var letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 var LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
 var numbers = new Set(['1','2','3','4','5','6','7','8','9','0']);
-var funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=','!']);
-var special_funcs = new Set(['ARRY','REDC','FLTR','EACH']);
+var funcs = new Set(['+','-','*','/','>','<','^','_','@','?','|','.','=','!','$']);
+var special_funcs = new Set(['ARRY','REDC','FLTR','EACH','CLSS']);
 var patterns = new Set(['(',')','[',']','"']);
 var custom = new Set([]);
 var anyChar = new Set(numbers.append(patterns).append(funcs).append(letters).append(LETTERS).data);
 
 var stack = [];
-
+var custom_types = {};
 var l = body.length,
     current,
     valNode;
@@ -36,6 +36,7 @@ function parser(state, stack){
 		current = state.next();
 		if(anyChar.contains(current)){
 			if(current === '(' && state.chunk(4) !== '(def' && state.chunk(4) !== '(set'){
+				console.log('YEAH', state.scope)
 				if(state.scope === null){
 					state.scope = new Tree();
 				} else {
@@ -49,7 +50,7 @@ function parser(state, stack){
 			else if(custom.contains(state.next_word())){
 				name = state.next_word();
 				state.advance(name.length-1);
-				if(state.scope.get('type') !== undefined){
+				if(state.scope.get('type') !== undefined && custom_types[name] !== 'funcdef'){
 					valNode = state.scope.insert();
 					valNode.set('type','custom');
 					valNode.set('value', name);
@@ -82,15 +83,19 @@ function parser(state, stack){
 				valNode.set('value', list);			
 			}
 			else if(current === ')'){
+				if(state.scope.get('type') === 'custom' && state.chunk(2) === '))'){
+					state.incr();
+				}
 				if(state.scope.parent === null){
 					stack.push(state.scope);
-				}
+				} 
 				state.scope = state.scope.parent;
 			}
 			else if(state.chunk(3) === 'def'){
 				current = state.advance(4);
 				name = state.take_name();
 				custom.add(name);
+				custom_types[name] = 'funcdef';
 				current = state.idx();
 				var defn = new Tree();
 				defn.set('type','funcdef');
@@ -120,13 +125,21 @@ function parser(state, stack){
 				current = state.advance(4);
 				name = state.take_name();
 				custom.add(name);
+				custom_types[name] = 'setdef';
 				current = state.idx();
 				var defset = new Tree();
 				defset.set('type','setdef');
 				defset.set('name', name);
-				var content = state.take_brackets();
-				defset.set('value', content);
-				stack.push(defset);
+				if(state.chunk(3).indexOf('(') !== -1){
+					if(state.scope === null){
+						state.scope = defset;
+					}
+					state.next_paren();
+				} else {
+					var content = state.take_brackets();
+					defset.set('value', content);
+					stack.push(defset);
+				}
 			}
 		}
 		state.incr();

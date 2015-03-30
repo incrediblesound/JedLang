@@ -5,7 +5,7 @@ JedLang is a crazy lisp-like languge that I made up for fun. While it is not ver
 
 Lispy Math
 ----------
-```shell
+```lisp
 (+ 3 2)
 (/ 4 2)
 (- 4 (/4 2))
@@ -13,7 +13,7 @@ Lispy Math
 
 Output
 ------
-```shell
+```lisp
 (@ (+3 2)) //=> 5
 (@ "Hello, world.") //=> Hello, world.
 ```
@@ -39,7 +39,7 @@ _  (X, Y) -> returns member of set Y at index X
 
 Define a custom function with def. The def command goes like this:
 
-```shell
+```lisp
 (def <name> <arguments> <function body>)
 ```
 Make sure to use X Y or Z for you argument names, they correspond to the first, second and third arguments of a function invocation.    
@@ -48,7 +48,7 @@ There is another kind of custom function that uses core functions. There is redu
     
 They are used like this:
 
-```shell
+```lisp
 (def <name> REDC <iterator>) // takes an array as input
 (def <name> ARRY <iterator>) // takes a number of iterations and (X) element to iterate
 (def <name> FLTR <test>) // takes a boolean function and a set (X) to iterate over
@@ -56,7 +56,7 @@ They are used like this:
 ```
 The iterator in REDC can take a lowercase letter to stand in for the element at the current index during iteration. The other functions use X to stand for the arguments used to invoke the function. Here is a set of examples to demonstrate function definitions, not that definitions should always come at the top of a file, they are arranged here differently for purposes of demonstration. For working examples look in the examples directory of this repo.
 
-```shell
+```lisp
 (def sum REDC (+ e))
 (@ (sum [1,2,3,4])) //=> 10
 (def len REDC (+ 1))
@@ -75,7 +75,7 @@ The iterator in REDC can take a lowercase letter to stand in for the element at 
 ```
 
 Filter can only be used on sets:
-```shell
+```lisp
 (set plant1 {"healthy", 31})
 (set plant2 {"healthy", 9})
 (set plant3 {"unhealthy", 13})
@@ -83,7 +83,7 @@ Filter can only be used on sets:
 (def healthy FLTR (= (_ 0 X) "healthy")) //=> returns a set of {plant1, plant2}
 ```
 Each can be used with both arrays and sets:
-```shell
+```lisp
 (set jim {"James" 23})
 (set bob {"Bob" 21})
 (set dan {"Dan" 25})
@@ -97,13 +97,13 @@ Each can be used with both arrays and sets:
 Booleans
 --------
 There are functions that output booleans:
-```shell
+```lisp
 (@ (> 4 3)) //=> True
 (@ (< 1 0)) //=> False
 (@ (= 1 1)) //=> True
 ```
 The equality operator checks arrays and sets to see if the all members are equal:
-```shell
+```lisp
 (set james {"James" "Edwards"})
 (set jim {"James" "Bergson"})
 
@@ -112,7 +112,7 @@ The equality operator checks arrays and sets to see if the all members are equal
 ```
 
 The conditional function takes a boolean function as its first argument:
-```shell
+```lisp
 (@ (? (> (avg [1,2,3,4]) 1) 10 0)) //=> 10
 
 (def wow X Y (? (> X Y) (@ "wham") (@ "whoozle")))
@@ -120,7 +120,7 @@ The conditional function takes a boolean function as its first argument:
 ```
 The conditional function can return functions, as in the two print functions above, or values like in the implementation of fibonnaci below:
 
-```shell
+```lisp
 (def low X (? (> X 0) 1 0))
 (def fib X (? (< X 3) (low X) (+ (fib (- X 1)) (fib (- X 2)))))
 ```
@@ -129,7 +129,7 @@ Sets
 
 Sets are not sets in the mathematical sense, they are just groupings of mixed type values. Sets can have set members:
 
-```shell
+```lisp
 (set james {"James", 31, "Developer"})
 (set mary {"Mary", 29, "Architect"})
 (set john {"John", 25, "Intern"})
@@ -147,13 +147,13 @@ Classes
 -------
 Classes are basically just functions that return sets. You can think of them as set partials. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function. Here is the pattern:
 
-```shell
+```lisp
 (def <class-name> CLSS { <elements/arguments> }) // define a class function
-(set <set-name> (<class-name> <args))  // use class function to instantiate a set
+(set <set-name> (<class-name> <args>))  // use class function to instantiate a set
 ```
 
 The following is an example taken directly from example file #10 in the examples directory, another example may be found in example file #9.
-```shell
+```lisp
 // camellia is a plant with genus camellia and species X
 (def cmlia CLSS { "camellia", X})
 
@@ -172,10 +172,10 @@ USE
 ---
 Clone this repository and cd into the directory. Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
 
-```shell
+```lisp
 node parser.js <path/to/filename>
 ```
 The above command will create both filename.out and output.c, and it assumes you do not include the extension with the filename. Running the code is just like running any other .out file, it is just compiled c code:
-```shell
+```lisp
 ./<filename>.out
 ```

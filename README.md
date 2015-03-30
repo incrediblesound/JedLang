@@ -143,9 +143,14 @@ Sets are not sets in the mathematical sense, they are just groupings of mixed ty
 (job (- (. employees) 1) employees) //=> "Intern"
 ```
 
-CLASSES
+Classes
 -------
-Classes are basically just functions that return sets. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function.
+Classes are basically just functions that return sets. You can think of them as set partials. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function. Here is the pattern:
+
+```shell
+(def <class-name> CLSS { <elements/arguments> }) // define a class function
+(set <set-name> (<class-name> <args))  // use class function to instantiate a set
+```
 
 The following is an example taken directly from example file #10 in the examples directory, another example may be found in example file #9.
 ```shell

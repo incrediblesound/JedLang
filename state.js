@@ -38,7 +38,7 @@ module.exports = function(){
 			return this.body[this.i];
 		},
 		next: function(){
-			while(this.idx() === ' '){
+			while(this.idx() === ' ' || /\r\n|\n|\r/.test(this.idx())){
 				this.incr();
 			}
 			return this.idx();

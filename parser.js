@@ -54,6 +54,7 @@ function parser(state, stack){
 					valNode.set('type','custom');
 					valNode.set('value', name);
 				} else {
+					console.log(state.scope)
 					state.scope.set('type','custom');
 					state.scope.set('value', name);	
 				}
@@ -82,13 +83,16 @@ function parser(state, stack){
 				valNode.set('value', list);			
 			}
 			else if(current === ')'){
-				if(state.scope.get('type') === 'custom' && state.chunk(2) === '))'){
-					state.incr();
+				if(!!state.scope){
+					if(state.scope.get('type') === 'custom' && state.chunk(2) === '))' && 
+					   state.scope.get('name') !== undefined){
+						state.incr();
+					}
+					if(state.scope.parent === null){
+						stack.push(state.scope);
+					} 
+					state.scope = state.scope.parent;
 				}
-				if(state.scope.parent === null){
-					stack.push(state.scope);
-				} 
-				state.scope = state.scope.parent;
 			}
 			else if(state.chunk(3) === 'def'){
 				current = state.advance(4);
@@ -120,7 +124,8 @@ function parser(state, stack){
 					stack.push(defn);
 				}
 			}
-			else if(state.chunk(3) === 'set'){
+			else if(state.chunk(3) === 'set' || state.chunk(3) === 'let'){
+				var isLet = state.chunk(3) === 'let';
 				current = state.advance(4);
 				name = state.take_name();
 				custom.add(name);
@@ -130,10 +135,18 @@ function parser(state, stack){
 				defset.set('type','setdef');
 				defset.set('name', name);
 				if(state.chunk(3).indexOf('(') !== -1){
+					console.log('scope ', state.scope)
 					if(state.scope === null){
 						state.scope = defset;
+					} else {
+						state.scope.set('type','setdef');
+						state.scope.set('name', name);
+					}
+					if(isLet){
+						state.scope.set('switch', 'let')
 					}
 					state.next_paren();
+					
 				} else {
 					var content = state.take_brackets();
 					defset.set('value', content);

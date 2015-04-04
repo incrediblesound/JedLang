@@ -1,0 +1,8 @@
+(def fst X (_ 0 X))
+(set values {11, 12} )
+(set numbers {41, 44} )
+(def add_one EACH (+ 1 X))
+(def inner EACH (add_one X))
+(set vals {values, numbers})
+(let big (inner vals))
+(@ (fst (fst big)))

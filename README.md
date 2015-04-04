@@ -143,7 +143,21 @@ Sets are not sets in the mathematical sense, they are just groupings of mixed ty
 (job (- (. employees) 1) employees) //=> "Intern"
 ```
 
-Classes
+Keyword let
+-----------
+
+In Jedlang, let is used to create a set by passing a set into one or more functions. The following example should serve to illustrate this usage:
+```lisp
+(set values {11, 12})
+(set numbers {41, 44})
+(def add_one EACH (+ 1 X))
+(def inner EACH (add_one X))
+(set vals {values, numbers})
+(let plus_one (inner vals)) // plus_one is now the result of passing vals into inner
+(@ (_ 0 ( _ 0 plus_one))) //=> 12
+```
+
+CLASSES
 -------
 Classes are basically just functions that return sets. You can think of them as set partials. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function. Here is the pattern:
 

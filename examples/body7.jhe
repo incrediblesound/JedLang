@@ -4,8 +4,7 @@
 (set dave {"Dave", 35, "Singer"})
 
 (set employees {james, mary, john, dave})
-
-(def thirty FLTR (> (_ 1 X) 30))
-(def name X (_ 0 X))
-(def second X (_ 1 X))
-(@ (name (second (thirty employees))))
+(def fst X (_ 0 X))
+(def snd X (_ 1 X))
+(def addone EACH (+ 1 (fst X)))
+(@ (snd (fst (addone employees))))

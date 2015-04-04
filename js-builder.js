@@ -45,8 +45,8 @@ var variables = {
 
 module.exports = function(stack, name, funcdefs){
 	// for(var i = 0; i < stack.length; i++){
-	// 	console.log('stack '+i, stack[i]);
-	// 	console.log('stack '+i+' chldrn', stack[i].children)
+	// 	console.log('stack: ', stack[i]);
+	// 	console.log('children:', stack[i].children);
 	// }
 	DEFS = funcdefs;
 	var command;
@@ -116,7 +116,7 @@ function buildFunctions(tree, result, argNames){
 		if(DEFINED[tree.get('value')].type === 'function' ||
 			DEFINED[tree.get('value')].type === 'class'){
 
-			if(DEFINED[tree.get('value')].type === 'class'){
+			if(DEFINED[tree.get('value')].type === 'class' || tree.get('switch') === 'let'){
 				// if the function is a class, we need to save the result in a set object
 				var objectName = variables.newVariable();
 				result += 'struct Object '+objectName+' = ';
@@ -172,7 +172,6 @@ function buildFunctions(tree, result, argNames){
 	}
 	return result;
 };
-
 function createFuncDefs(stack){
 	while(stack.length && (stack[0].get('type') === 'funcdef' ||
 		  stack[0].get('type') === 'setdef')){
@@ -240,6 +239,7 @@ function writeSetObject(tree){
 		IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
 		DECLARATIONS += 'struct Object '+objectName+';\n';
 	} else {
+		console.log('hey')
 		var objectName = memberNames[0];
 	}
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
@@ -295,6 +295,7 @@ function writeCLASSFunc(tree){
 }
 
 function writeCustomFuncs(tree, definition){
+	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
 	var args = definition.data.arguments;
 	var name = definition.data.name;
 	var funcBody = '', argNames = [];
@@ -390,7 +391,7 @@ function writeFLTRFunc(tree){
 }
 
 function writeEACHFunc(tree){
-	var startingPoint = IN_SCOPE_LEN.current;
+	var startingPoint = IN_SCOPE.length;
 	var state = stateFactory();
 	state.body = tree.get('iterator');
 	var iterator = parser(state, [], DEFS)[0];
@@ -399,13 +400,13 @@ function writeEACHFunc(tree){
 	var funcName = variables.newVariable();
 	var head = 'struct Object '+funcName+'(struct Object arr){\n';
 	funcBody += 'for(int i=0;i<arr.length;i++){\nif(arr.type == \'a\'){\n'
-	funcBody += 'union Data dt; dt.i = arr.dat.ia[i]; struct Object temp = {\'i\', 0, dt};\n'
-	funcBody += 'arr.dat.ia[i] = '+buildFunctions(iterator,'',['temp'])+'.dat.i ;}'
+	funcBody += 'union Data dt;\ndt.i = arr.dat.ia[i];\nstruct Object temp = {\'i\', 0, dt};\n'
+	funcBody += 'arr.dat.ia[i] = '+buildFunctions(iterator,'',['temp'])+'.dat.i;}\n'
 	funcBody += 'else if(arr.type == \'o\'){\n'
-	funcBody += 'arr.dat.oa[i] = '+buildFunctions(iterator,'',['arr.dat.oa[i]'])+'; } }\n'
+	funcBody += 'arr.dat.oa[i] = '+buildFunctions(iterator,'',['arr.dat.oa[i]'])+';\n}\n}\n'
 	funcBody += 'return arr; };\n';
 	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
-	PRE_MAIN += head + IN_SCOPE.substring(startingPoint, IN_SCOPE_LEN.current) + funcBody;
+	PRE_MAIN += head + IN_SCOPE.substring(startingPoint, IN_SCOPE.length) + funcBody;
 	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
 	IN_SCOPE_LEN.current = IN_SCOPE.length;
 }

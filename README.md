@@ -183,7 +183,13 @@ The following is an example taken directly from example file #10 in the examples
 ```
 Class Constrained Functions
 ---------------------------
-Jedlang offers the ability to define functions with class constrictions. For now, it only supports one class per function. 
+Jedlang offers the ability to define functions with class constrictions. For now, it only supports one class per function. To define a class restricted function, simply use the name of a class anywhere in the function definition. If there are other arguments to that function, the class object will be assumed to be the last argument to the function.
+```lisp
+(def plant CLSS { X, Y })
+(def genus (_ 0 plant)) // a function that only takes a "plant" object
+(set tea (plant "Camelia" "Sinensis"))
+(genus tea) //=> "Camelia"
+```
 
 Use
 ---

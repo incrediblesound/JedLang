@@ -1,0 +1,13 @@
+(def plant CLSS { X, Y })
+(def point CLSS { X, Y })
+(def genus (_ 0 plant))
+(def half EACH (/ 2 X))
+(def mid (half point))
+(def x_coord (_ 0 point))
+(def y_coord (_ 1 point))
+
+(set tea (plant "Camelia" "Sinensis"))
+(set point_a (point 3 7))
+(@(genus tea))
+(@(x_coord point_a))
+(@(y_coord point_a))

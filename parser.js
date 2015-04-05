@@ -54,7 +54,6 @@ function parser(state, stack){
 					valNode.set('type','custom');
 					valNode.set('value', name);
 				} else {
-					console.log(state.scope)
 					state.scope.set('type','custom');
 					state.scope.set('value', name);	
 				}
@@ -135,7 +134,6 @@ function parser(state, stack){
 				defset.set('type','setdef');
 				defset.set('name', name);
 				if(state.chunk(3).indexOf('(') !== -1){
-					console.log('scope ', state.scope)
 					if(state.scope === null){
 						state.scope = defset;
 					} else {

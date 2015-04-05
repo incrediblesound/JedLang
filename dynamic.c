@@ -241,8 +241,6 @@ int main(){
 	da.i = 1;
 	union Data db;
 	db.i = 2;
-	struct Object oa = {'i',0,da};
-	struct Object ob = {'i',0,db};
 	union Data dat_arr[2] = {da, db};
 	union Data dc;
 	dc.ua = dat_arr;

@@ -5,13 +5,15 @@ var Tree = require('./tree.js').Tree;
 var exec = require('child_process').exec;
 var stateFactory = require('./state.js');
 var parser = require('./parser_module.js');
+var _ = require('lodash');
 
 var functions = {};
 functions.Tree = Tree;
 funcs = new Set(['+','-','*','/','>']);
 letters = new Set(['a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z']);
 LETTERS = new Set(['A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z']);
-
+VARIABLES = new Set(['X','Y','Z']);
+ERRORS = new Set();
 CURRENT_TYPE = null;
 DEFINED = {};
 
@@ -57,13 +59,17 @@ module.exports = function(stack, name, funcdefs){
 		result = buildFunctions(command, result);
 		result += ';';
 	};
-	result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};\n';
-	fs.writeFileSync('output.c', result);
-	exec('gcc output.c -o '+name+'.out', function(err){
-		if(err) console.log(err);
-		// exec('rm -rf output.c');
-		return;
-	});
+	if(ERRORS.isEmpty()){
+		result = '#include \"jedlang.h\"\n\n'+DECLARATIONS+'\n'+PRE_MAIN+'\nint main(){\n'+IN_SCOPE+'\n'+result + '\n};\n';
+		fs.writeFileSync('output.c', result);
+		exec('gcc output.c -o '+name+'.out', function(err){
+			if(err) console.log(err);
+			// exec('rm -rf output.c');
+			return;
+		});
+	} else {
+		ERRORS.print();
+	}
 };
 
 function makeIntObject(num){
@@ -99,7 +105,7 @@ function makeArrayObject(arr){
 	return structName;
 }
 
-function buildFunctions(tree, result, argNames){
+function buildFunctions(tree, result, argNames, context){
 	if(tree.get('type') === 'value' && LETTERS.contains(tree.get('value'))){
 		result += ''+argNames[ARG_MAP[tree.get('value')]];
 	}
@@ -120,18 +126,28 @@ function buildFunctions(tree, result, argNames){
 				// if the function is a class, we need to save the result in a set object
 				var objectName = variables.newVariable();
 				result += 'struct Object '+objectName+' = ';
-				DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
+				DEFINED[tree.get('name')] = {name: objectName, type: 'set', clss: _.result(DEFINED[tree.get('value')], 'label')};
 			}
 			result += DEFINED[tree.get('value')].name + '(';
 			for(var i = 0; i < tree.size(); i++){
-				result = buildFunctions(tree.children[i], result, argNames);
+				result = buildFunctions(tree.children[i], result, argNames, tree);
 				if(i !== tree.children.length-1){
 					result += ',';
 				}
 			}
 			result += ')';	
 		} else {
-			result += DEFINED[tree.get('value')].name;
+			var parentFunc = DEFINED[context.get('value')];
+			var currentVal = DEFINED[tree.get('value')];
+			if(parentFunc.restriction !== undefined){
+			    if(parentFunc.restriction.contains(currentVal.clss)){
+					result += DEFINED[tree.get('value')].name;
+			    } else {
+			    	ERRORS.add('\nERROR: Set of class '+currentVal.clss+' not compatible with function '+context.get('value')+'\n')
+			    }
+			} else {
+				result += DEFINED[tree.get('value')].name;
+			}
 		}
 	}
 	else if(tree.get('type') === 'function' && tree.data.value !== '?'){
@@ -239,7 +255,6 @@ function writeSetObject(tree){
 		IN_SCOPE += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
 		DECLARATIONS += 'struct Object '+objectName+';\n';
 	} else {
-		console.log('hey')
 		var objectName = memberNames[0];
 	}
 	DEFINED[tree.get('name')] = {name: objectName, type: 'set'};
@@ -258,7 +273,7 @@ function writeClassObject(tree){
 function writeCLASSFunc(tree){
 	var iterator = tree.get('iterator');
 	var funcName = variables.newVariable();
-	DEFINED[tree.get('name')] = {name: funcName, type: 'class'};
+	DEFINED[tree.get('name')] = {name: funcName, type: 'class', label: tree.get('name')};
 	var arg, funcs = [];
 	var funcBody = 'struct Object '+funcName+'(';
 	for(var i = 0; i < iterator.length; i++){
@@ -298,6 +313,7 @@ function writeCustomFuncs(tree, definition){
 	IN_SCOPE_LEN.prev = IN_SCOPE_LEN.current;
 	var args = definition.data.arguments;
 	var name = definition.data.name;
+	var classRestriction = findClassName(tree, args);
 	var funcBody = '', argNames = [];
 	var funcName = variables.newVariable();
 	DECLARATIONS += makeDeclaration(funcName, args.length);
@@ -309,7 +325,12 @@ function writeCustomFuncs(tree, definition){
 			head += ', ';
 		} else { head += '){\n';}
 	}
-	DEFINED[name] = {name: funcName, arguments: argNames, type:'function'};
+	DEFINED[name] = {
+		name: funcName, 
+		arguments: argNames, 
+		type:'function', 
+		restriction: new Set(classRestriction)
+	};
 	var result = variables.newVariable();
 	funcBody += 'struct Object '+result+' = '+buildFunctions(tree, '', argNames)+';\n';
 	funcBody += 'return '+result+';\n};\n';
@@ -317,6 +338,7 @@ function writeCustomFuncs(tree, definition){
 	PRE_MAIN += head + IN_SCOPE.substring(IN_SCOPE_LEN.prev, IN_SCOPE_LEN.current) + funcBody;
 	IN_SCOPE = IN_SCOPE.substring(0, IN_SCOPE_LEN.prev)
 	IN_SCOPE_LEN.prev = IN_SCOPE.length;
+	IN_SCOPE_LEN.current = IN_SCOPE.length;
 	return;
 };
 
@@ -435,6 +457,27 @@ function makeDeclaration(name, num){
 	result += ');\n';
 	return result;
 };
+
+function findClassName(tree, args, idx){
+	idx = idx || 0;
+	args = args || [];
+	var result = [], temp;
+	if(DEFINED[tree.get('value')] !== undefined && DEFINED[tree.get('value')].type === 'class'){
+		result.push(tree.get('value'));
+		tree.set('value', VARIABLES.get(idx));
+		tree.set('type', 'value');
+		args.push(VARIABLES.get(idx));
+		idx++
+	} else {
+		for(var i = 0; i < tree.children.length; i++){
+			temp = findClassName(tree.children[i],args, idx);
+			if(temp.length > 0){
+				result.push(temp);
+			}
+		}
+	}
+	return _.flatten(result);
+}
 
 function makeObjectInstance(value){
 	if(parseInt(value) === parseInt(value)){

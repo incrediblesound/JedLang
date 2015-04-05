@@ -10,6 +10,7 @@
   "author": "James H Edwards",
   "license": "MIT",
   "dependencies": {
-    "commander": "^2.7.1"
+    "commander": "^2.7.1",
+    "lodash": "^3.6.0"
   }
 }

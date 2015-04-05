@@ -1,5 +1,5 @@
 var Set = function(array){
-	this.data = array;	
+	this.data = array || [];	
 };
 Set.prototype.contains = function(item){
 	return (this.data && this.data.length) ? (this.data.indexOf(item) > -1) : false;
@@ -19,6 +19,15 @@ Set.prototype.add = function(item){
 Set.prototype.rnd = function(){
 	var index = Math.floor(Math.random()*this.data.length);
 	return this.get(index);
+}
+Set.prototype.isEmpty = function(){
+	return this.data.length === 0;
+}
+
+Set.prototype.print = function(){
+	for(var i = 0; i < this.data.length; i++){
+		console.log(this.data[i])
+	}
 }
 
 module.exports = {

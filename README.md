@@ -157,7 +157,7 @@ In Jedlang, let is used to create a set by passing a set into one or more functi
 (@ (_ 0 ( _ 0 plus_one))) //=> 12
 ```
 
-CLASSES
+Classes
 -------
 Classes are basically just functions that return sets. You can think of them as set partials. When you define a class, you can use X, Y and Z for arguments and any other value, including sets, for elements of the return set that will be the same for each set returned by the class function. Here is the pattern:
 
@@ -181,8 +181,11 @@ The following is an example taken directly from example file #10 in the examples
 (set tea_full (teaceae tea))
 (@ (_ 0 tea_full)) //=> "Teacea"
 ```
+Class Constrained Functions
+---------------------------
+Jedlang offers the ability to define functions with class constrictions. For now, it only supports one class per function. 
 
-USE
+Use
 ---
 Clone this repository and cd into the directory. Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
 

@@ -3,6 +3,21 @@ JedLang
 
 JedLang is a crazy lisp-like languge that I made up for fun. While it is not very readable, it is intended to be very terse and easy to use. It compiles to C.
 
+Use
+---
+Clone this repository and cd into the directory. Write a JedLang file and give it a .jhe extension. Compilation requires the use of the GCC compiler, but another can be substituted in src/interpreter.js. To compile and run use the following pattern:
+
+```shell
+node jlc.js path/to/filename output_filename
+```
+The above command will create both filename.out and output.c, and it assumes you do not include the extension with the filename. Running the code is just like running any other .out file, it is just compiled c code:
+```shell
+./output_filename.out
+```
+
+Documentation
+============
+
 Lispy Math
 ----------
 ```lisp
@@ -189,16 +204,4 @@ Jedlang offers the ability to define functions with class constrictions. For now
 (def genus (_ 0 plant)) // a function that only takes a "plant" object
 (set tea (plant "Camelia" "Sinensis"))
 (genus tea) //=> "Camelia"
-```
-
-Use
----
-Clone this repository and cd into the directory. Write a JedLang file and give it a .jhe extension. To compile and run use the following pattern:
-
-```lisp
-node parser.js <path/to/filename>
-```
-The above command will create both filename.out and output.c, and it assumes you do not include the extension with the filename. Running the code is just like running any other .out file, it is just compiled c code:
-```lisp
-./<filename>.out
 ```

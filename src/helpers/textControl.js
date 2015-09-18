@@ -1,3 +1,9 @@
+var chars = require('./chars.js');
+
+var letters = chars.letters();
+var LETTERS = chars.LETTERS();
+var anyChar = chars.anyChar();
+
 module.exports = function(){
 	return {
 		scope: null,

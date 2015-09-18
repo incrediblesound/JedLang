@@ -1,5 +1,5 @@
 (def point CLSS { X, Y })
 (def incrx X (+ X (_ 0 point)))
 (set point_a (point 3 4))
-(@(incrx 3 point_a))
-(@ (_ 0 point_a))
+(let point_b (incrx 3 point_a))
+(@ (_ 0 point_b))

@@ -4,7 +4,8 @@ module.exports = {
 	makeObjectInstance: makeObjectInstance,
 	getType: getType,
 	stringToArray: stringToArray,
-	printList: printList
+	printList: printList,
+	trim: trim
 }
 
 function argNameText(array, inner){

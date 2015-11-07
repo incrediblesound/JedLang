@@ -1,69 +1,42 @@
 var _ = require('lodash');
 var sys = require('./helpers/func.js');
 var chars = require('./helpers/chars.js');
+var basicTypes = require('./basicTypes.js');
 var funcs = chars.funcs();
 var letters = chars.letters();
 var LETTERS = chars.LETTERS();
 var VARIABLES = chars.VARIABLES();
 var ERRORS = chars.ERRORS();
 
-function makeIntObject(num, controller){
-	var structName = controller.variables.newVariable();
-	var unionName = controller.variables.newVariable();
-	controller.in_scope += 'union Data '+unionName+';\n'+unionName+'.i = '+num+';\n';
-	controller.in_scope += 'struct Object '+structName+' = {\'i\',0,'+unionName+'};\n';
-	controller.in_scope_len.current = controller.in_scope.length;
-	return structName;
-};
-
-function makeStringObject(str, controller){
-	var structName = controller.variables.newVariable();
-	var unionName = controller.variables.newVariable();
-	var charName = controller.variables.newVariable();
-	controller.in_scope += 'char *'+charName+';\n';
-	controller.in_scope += ''+charName+' = (char *) malloc(sizeof(char) * '+(str.length-1)+');\n';
-	controller.in_scope += 'strcpy('+charName+', '+str+');\n';
-	controller.in_scope += 'union Data '+unionName+';\n'+unionName+'.s = '+charName+';\n';
-	controller.in_scope += 'struct Object '+structName+' = {\'s\','+(str.length-1)+','+unionName+'};\n';
-	controller.in_scope_len.current = controller.in_scope.length;
-	return structName;
-};
-
-function makeArrayObject(arr, controller){
-	var structName = controller.variables.newVariable();
-	var unionName = controller.variables.newVariable();
-	var arrName = controller.variables.newVariable();
-	controller.in_scope += 'int '+arrName+'['+arr.length+'] = {'+arr.toString()+'};\n';
-	controller.in_scope += 'union Data '+unionName+';\n'+unionName+'.ia = '+arrName+';\n';
-	controller.in_scope += 'struct Object '+structName+' = {\'a\','+arr.length+','+unionName+'};\n';
-	controller.in_scope_len.current = controller.in_scope.length;
-	return structName;
-}
-
 module.exports = buildFunctions = function(tree, result, argNames, context, controller){
-	if(tree.get('type') === 'value' && LETTERS.contains(tree.get('value'))){
-		result += ''+argNames[controller.arg_map[tree.get('value')]];
-	}
-	else if(tree.get('type') === 'value'){
-		result += makeIntObject(tree.get('value'), controller);
-	}
-	else if(tree.get('type') === 'string'){
-		result += makeStringObject(tree.get('value'), controller);
-	}
-	else if(tree.get('type') === 'array'){
-		result += makeArrayObject(tree.get('value'), controller);
-	}
-	else if(tree.get('type') === 'custom' && controller.defined[tree.get('value')] !== undefined){
-		if(controller.defined[tree.get('value')].type === 'function' ||
-			controller.defined[tree.get('value')].type === 'class'){
+	var treeType = tree.get('type');
+	var treeValue = tree.get('value');
 
-			if(controller.defined[tree.get('value')].type === 'class' || tree.get('switch') === 'let'){
+	if(treeType === 'value' && LETTERS.contains( treeValue )){
+		result += ''+argNames[controller.arg_map[ treeValue ]];
+	}
+	else if(treeType === 'value'){
+		result += basicTypes.makeIntObject(treeValue, controller);
+	}
+	else if(treeType === 'string'){
+		result += basicTypes.makeStringObject(treeValue, controller);
+	}
+	else if(treeType === 'array'){
+		result += basicTypes.makeArrayObject(treeValue, controller);
+	}
+	else if(treeType === 'custom' && controller.defined[ treeValue ] !== undefined){
+		var definition = controller.defined[ treeValue ];
+
+		if(definition.type === 'function' ||
+			definition.type === 'class'){
+
+			if(definition.type === 'class' || tree.get('switch') === 'let'){
 				// if the function is a class, we need to save the result in a set object
 				var objectName = controller.variables.newVariable();
 				result += 'struct Object '+objectName+' = ';
 				controller.defined[tree.get('name')] = {name: objectName, type: 'set', clss: _.result(controller.defined[tree.get('value')], 'label')};
 			}
-			result += controller.defined[tree.get('value')].name + '(';
+			result += controller.defined[ treeValue ].name + '(';
 			for(var i = 0; i < tree.size(); i++){
 				result = buildFunctions(tree.children[i], result, argNames, tree, controller);
 				if(i !== tree.children.length-1){
@@ -73,19 +46,20 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 			result += ')';	
 		} else {
 			var parentFunc = controller.defined[context.get('value')];
-			var currentVal = controller.defined[tree.get('value')];
-			if(!!parentFunc && parentFunc.restriction !== undefined){
-			    if(parentFunc.restriction.contains(currentVal.clss)){
+
+			if(!!parentFunc && !!parentFunc.restriction){
+			    if(parentFunc.restriction.contains(definition.clss)){
 					result += controller.defined[tree.get('value')].name;
 			    } else {
-			    	ERRORS.add('\nERROR: Set of class '+currentVal.clss+' not compatible with function '+context.get('value')+'\n')
+			    	ERRORS.add('\nERROR: Set of class '+definition.clss+' not compatible with function '+context.get('value')+'\n')
 			    }
+
 			} else {
 				result += controller.defined[tree.get('value')].name;
 			}
 		}
 	}
-	else if(tree.get('type') === 'function' && tree.data.value !== '?'){
+	else if(treeType === 'function' && tree.data.value !== '?'){
 		result += sys.map[tree.get('value')];
 		for(var i = 0; i < tree.size(); i++){
 			result = buildFunctions(tree.children[i], result, argNames, tree, controller);

@@ -5,6 +5,7 @@ var parser = require('./parser_module.js');
 var chars = require('./helpers/chars.js');
 var buildFunctions = require('./buildFunctions.js');
 var Set = require('./helpers/set.js').Set;
+var basicTypes = require('./basicTypes.js');
 
 var funcs = chars.funcs();
 var LETTERS = chars.LETTERS();
@@ -16,9 +17,9 @@ module.exports = createFuncDefs = function(stack, controller){
 		var tree = stack.shift();
 		if(tree.get('type') === 'setdef'){
 			if(!tree.children.length){
-				writeSetObject(tree);
+				writeSetObject(tree, controller);
 			} else {
-				writeClassObject(tree);
+				writeClassObject(tree, controller);
 			}
 		}
 		else if(tree.get('action') === 'REDC'){
@@ -53,13 +54,13 @@ function writeSetObject(tree, controller){
 	for(var i = 0, l = members.length; i < l; i++){
 		var member = members[i];
 		if(helpers.getType(member) === 'number'){
-			memberNames.push(makeIntObject(member));
+			memberNames.push(basicTypes.makeIntObject(member, controller));
 		} else {
-			member = trim(member);
+			member = helpers.trim(member);
 			if(controller.defined[member] && controller.defined[member].type === 'set'){
 				memberNames.push(controller.defined[member].name);
 			} else {
-				memberNames.push(makeStringObject(member));
+				memberNames.push(basicTypes.makeStringObject(member, controller));
 			}
 		}
 	}
@@ -135,11 +136,11 @@ function writeCustomFuncs(tree, definition, controller){
 	controller.setPreviousLength();
 	var args = definition.data.arguments;
 	var name = definition.data.name;
-	var classRestriction = findClassName(tree, args, args.length, controller);
 	var funcBody = '', argNames = [];
 	var funcName = controller.variables.newVariable();
 	controller.declarations += helpers.makeDeclaration(funcName, args.length);
 	var head = 'struct Object '+funcName+'(';
+		
 	for(var i = 0; i < args.length; i++){
 		argNames.push(controller.variables.newVariable());
 		head += 'struct Object '+argNames[i];
@@ -147,19 +148,21 @@ function writeCustomFuncs(tree, definition, controller){
 			head += ', ';
 		} else { head += '){\n';}
 	}
+
+	var classRestriction = findClassName(tree, args, args.length, controller);
+	
 	controller.defined[name] = {
 		name: funcName, 
 		arguments: argNames, 
 		type:'function', 
-		restriction: new Set(classRestriction)
+		restriction: classRestriction.length ? new Set(classRestriction) : null
 	};
+
 	var result = controller.variables.newVariable();
 	funcBody += 'struct Object '+result+' = '+buildFunctions(tree, '', argNames, null, controller)+';\n';
 	funcBody += 'return '+result+';\n};\n';
-	var placeholders = ['X','Y','Z'];
 	controller.pre_main += head + controller.getScopeChunk() + funcBody;
 	controller.removeScopeChunk();
-	return;
 };
 
 function writeREDCFunc(tree, controller){
@@ -170,18 +173,18 @@ function writeREDCFunc(tree, controller){
 	func.set('type','function'); func.set('value',funcName);
 	var child = func.insert(); child.set('type','value'); child.set('value','X');
 	var placeholder = false;
-		if(letters.contains(funcElement)){
-	    	child = func.insert(); child.set('type','value'); child.set('value','Y');
-		} else {
-			placeholder = true;
-			child = func.insert(); child.set('type','value'); child.set('value',funcElement);
-		}
+	if(letters.contains(funcElement)){
+    	child = func.insert(); child.set('type','value'); child.set('value','Y');
+	} else {
+		placeholder = true;
+		child = func.insert(); child.set('type','value'); child.set('value',funcElement);
+	}
 	var name = tree.get('name');
 	var funcBody = '', head = '', argNames = [];
 	var funcName = controller.variables.newVariable();
 	head += 'struct Object '+funcName+'(struct Object array){\n';
 	funcBody += placeholder ? helpers.makeObjectInstance(funcElement) : 'struct Object jed_obj = getInt(array);\n';
-	funcBody += 'for(int i=1; i<array.length; i++){\n';
+	funcBody += 'int i=1;\nfor(i; i<array.length; i++){\n';
 	funcBody += 'jed_obj = '+buildFunctions(func, '',['jed_obj','createInt(array.dat.ia[i])'], null, controller)+';';
 	funcBody += '}\nreturn jed_obj;\n};\n';
 	controller.defined[name] = {name: funcName, arguments: argNames, type:'function'};
@@ -201,7 +204,7 @@ function writeARRYFunc(tree, controller){
 	funcBody += 'int arr[1] = { el.dat.i };\n';
 	funcBody += 'union Data dat; dat.ia = arr;\n'
 	funcBody += 'struct Object result = {\'a\',1,dat};\n';
-	funcBody += 'for(int i=1; i<num.dat.i; i++){\n';
+	funcBody += 'int i=1;\nfor(i; i<num.dat.i; i++){\n';
 	funcBody += 'el = '+buildFunctions(mutator, '',['el'], null, controller)+';\n';
 	funcBody += 'result = append(el, result);\n';
 	funcBody += '}\nreturn result;\n};\n';
@@ -219,7 +222,7 @@ function writeFLTRFunc(tree, controller){
 	var funcName = controller.variables.newVariable();
 	var head = 'struct Object '+funcName+'(struct Object arr){\n';
 	funcBody += 'union Data dat; struct Object *ptr; dat.oa = ptr; struct Object obj = {\'o\', 0, dat};\n';
-	funcBody += 'int count = 0;\nfor(int i = 0; i < arr.length; i++){\n';
+	funcBody += 'int count = 0;\nint i = 0;\nfor(i; i < arr.length; i++){\n';
 	funcBody += 'struct Object test = '+buildFunctions(test, '',['arr.dat.oa[i]'], null, controller)+';\n';
 	funcBody += 'if(test.dat.i == 1){\nobj = set_append(arr.dat.oa[i],obj);\n}\n}\n';
 	funcBody += 'return obj;\n}\n';
@@ -236,7 +239,7 @@ function writeEACHFunc(tree, controller){
 	var funcBody = '', argNames = [];
 	var funcName = controller.variables.newVariable();
 	var head = 'struct Object '+funcName+'(struct Object arr){\n';
-	funcBody += 'for(int i=0;i<arr.length;i++){\nif(arr.type == \'a\'){\n'
+	funcBody += 'int i = 0;\nfor(i;i<arr.length;i++){\nif(arr.type == \'a\'){\n'
 	funcBody += 'union Data dt;\ndt.i = arr.dat.ia[i];\nstruct Object temp = {\'i\', 0, dt};\n'
 	funcBody += 'arr.dat.ia[i] = '+buildFunctions(iterator,'',['temp'], null, controller)+'.dat.i;}\n'
 	funcBody += 'else if(arr.type == \'o\'){\n'

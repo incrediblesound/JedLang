@@ -21,6 +21,5 @@ var fileName = program.args[0].split('/');
 
 // parse into ast, mutating interpreting controller custom funcdefs
 var stack = parser(textControl, [], controller.defs);
-
 // write to C file and compile
 interpreter(stack, fileName, controller);

@@ -12,7 +12,7 @@ var LETTERS = chars.LETTERS();
 module.exports = function(textControl, stack, defs){
 	//import custom function names from initial parsing step
 	if(defs !== undefined){
-		custom.setData(defs);	
+		custom.setData(defs.data);	
 	}
 	while(textControl.i < textControl.body.length) {
 		var name, current;

@@ -33,7 +33,8 @@ struct Object show(struct Object obj){
 	}
 	else if(obj.type == 'a'){
 		printf("[");
-		for(int i = 0; i < obj.length; ++i){
+		int i = 0;
+		for(i; i < obj.length; ++i){
 			if(i < (obj.length-1)){
 				printf("%d, ", obj.dat.ia[i]);
 			} else {
@@ -44,7 +45,8 @@ struct Object show(struct Object obj){
 	}
 	else if(obj.type == 'd'){
 		printf("%s\n","{");
-		for(int i = 0; i < obj.length; ++i){
+		int i = 0;
+		for(i; i < obj.length; ++i){
 			if(i < (obj.length-1)){
 				show(obj.dat.oa[i]);
 			} else {
@@ -178,7 +180,8 @@ struct Object equal(struct Object a, struct Object b){
 	}
 	else if (a.type == 'o'){
 		isTrue = 1;
-		for(int i = 0; i < a.length; i++){
+		int i = 0;
+		for(i; i < a.length; i++){
 			struct Object temp = equal(a.dat.oa[i], b.dat.oa[i]);
 			isTrue = (temp.dat.i == 1 && isTrue == 1) ? 1 : 0;
 		}
@@ -186,7 +189,8 @@ struct Object equal(struct Object a, struct Object b){
 	}
 	else if (a.type == 'a'){
 		isTrue = 1;
-		for(int i = 0; i < a.length; i++){
+		int i = 0;
+		for(i; i < a.length; i++){
 			isTrue = (a.dat.ia[i] == b.dat.ia[i] && isTrue == 1) ? 1 : 0;
 		}
 		obj.dat.i = isTrue;
@@ -209,7 +213,8 @@ struct Object not_equal(struct Object a, struct Object b){
 	}
 	else if (a.type == 'o'){
 		isTrue = 1;
-		for(int i = 0; i < a.length; i++){
+		int i = 0;
+		for(i; i < a.length; i++){
 			struct Object temp = not_equal(a.dat.oa[i], b.dat.oa[i]);
 			isTrue = (temp.dat.i == 1 && isTrue == 1) ? 1 : 0;
 		}
@@ -217,7 +222,8 @@ struct Object not_equal(struct Object a, struct Object b){
 	}
 	else if (a.type == 'a'){
 		isTrue = 0;
-		for(int i = 0; i < a.length; i++){
+		int i = 0;
+		for(i; i < a.length; i++){
 			isTrue = (a.dat.ia[i] == b.dat.ia[i] && isTrue == 0) ? 0 : 1;
 		}
 		obj.dat.i = isTrue;
@@ -243,7 +249,8 @@ struct Object identity(struct Object a){
 
 struct Object set_append(struct Object a, struct Object b){
 	struct Object arr[b.length+1];
-	for(int i = 0; i < b.length+1; i++){
+	int i = 0;
+	for(i; i < b.length+1; i++){
 		if(i < b.length){
 			arr[i] = b.dat.oa[i];
 		} else {
@@ -260,7 +267,8 @@ struct Object append(struct Object a, struct Object b){
 		return set_append(a, b);
 	} else {
 		int arr[b.length+1];
-		for(int i = 0; i < b.length+1; i++){
+		int i = 0;
+		for(i; i < b.length+1; i++){
 			if(i < b.length){
 				arr[i] = b.dat.ia[i];
 			} else {
@@ -278,7 +286,8 @@ struct Object prepend(struct Object a, struct Object b){
 	b.length = b.length+1;
 	int frst = a.dat.i;
 	int temp, insert;
-	for(int i = 0; i < b.length; i++){
+	int i = 0;
+	for(i; i < b.length; i++){
 		if(i == 0){
 			temp = b.dat.ia[0];
 			b.dat.ia[0] = frst;

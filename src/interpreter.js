@@ -26,7 +26,11 @@ module.exports = function(stack, name, controller){
 		result += ';\n';
 	};
 	if(ERRORS.isEmpty()){
-		result = '#include \"jedlang.h\"\n\n'+controller.declarations+'\n'+controller.pre_main+'\nint main(){\n'+controller.in_scope+'\n'+result + '\n};\n';
+		result = '#include \"jedlang.h\"\n\n'+
+		controller.declarations+'\n'+
+		controller.pre_main+'\nint main(){\n'+
+		controller.in_scope+'\n'+result + '\n};\n';
+
 		fs.writeFileSync('./src/output.c', result);
 		exec('gcc ./src/output.c -o '+name+'.out', function(err){
 			if(err) console.log(err);

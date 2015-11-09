@@ -11,6 +11,7 @@ var ERRORS = chars.ERRORS();
 module.exports = buildFunctions = function(tree, result, argNames, context, controller){
 	var treeType = tree.get('type');
 	var treeValue = tree.get('value');
+	var treeName = tree.get('name');
 
 	if(treeType === 'value' && LETTERS.contains( treeValue )){
 		result += ''+argNames[controller.arg_map[ treeValue ]];
@@ -34,7 +35,7 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 				// if the function is a class, we need to save the result in a set object
 				var objectName = controller.variables.newVariable();
 				result += 'struct Object '+objectName+' = ';
-				controller.defined[tree.get('name')] = {name: objectName, type: 'set', clss: _.result(controller.defined[tree.get('value')], 'label')};
+				controller.defined[treeName] = {name: objectName, type: 'set', clss: _.result(controller.defined[treeValue], 'label')};
 			}
 			result += controller.defined[ treeValue ].name + '(';
 			for(var i = 0; i < tree.size(); i++){
@@ -55,12 +56,12 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 			    }
 
 			} else {
-				result += controller.defined[tree.get('value')].name;
+				result += controller.defined[treeValue].name;
 			}
 		}
 	}
 	else if(treeType === 'function' && tree.data.value !== '?'){
-		result += sys.map[tree.get('value')];
+		result += sys.map[treeValue];
 		for(var i = 0; i < tree.size(); i++){
 			result = buildFunctions(tree.children[i], result, argNames, tree, controller);
 			if(i !== tree.size()-1){
@@ -69,7 +70,7 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 		}
 		result += ')';
 	}
-	else if(tree.get('value') === '?'){
+	else if(treeValue === '?'){
 		var argsText = (argNames !== undefined) ? helpers.argNameText(argNames, false) : '';
 		var argsTextInner = (argNames !== undefined) ? helpers.argNameText(argNames, true) : '';
 		var arg_one = tree.children[1], arg_two = tree.children[2];
@@ -84,7 +85,9 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 		var arg_two_func_body = buildFunctions(arg_two,'',argNames, null, controller);
 		
 		controller.declarations += helpers.makeDeclaration(wrapper_name, argNames.length);
+
 		var func_body = buildFunctions(condition,'',argNames, null, controller);
+
 		head += 'struct Object '+wrapper_name+'('+argsText+'){\n'+IN_SCOPE+
 			'struct Object truthval = '+func_body+';\nstruct Object result;\n'+
 			'if(truthval.dat.i == 1){\nresult = '+arg_one_func_body+';\n'+
@@ -92,6 +95,7 @@ module.exports = buildFunctions = function(tree, result, argNames, context, cont
 		
 		controller.in_scope = '';
 		tail = ''+wrapper_name+'('+argsTextInner+')';
+		
 		controller.pre_main += head;
 		result += tail;
 	}

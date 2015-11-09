@@ -1,4 +1,4 @@
 (def mlt REDC (* e))
 (def count ARRY (+ X 1))
 (def fac X (mlt (count X 1)))
-(@ (fac 14))
+(@ (fac 24))

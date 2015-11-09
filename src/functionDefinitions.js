@@ -6,6 +6,7 @@ var chars = require('./helpers/chars.js');
 var buildFunctions = require('./buildFunctions.js');
 var Set = require('./helpers/set.js').Set;
 var basicTypes = require('./basicTypes.js');
+var Tree = require('./helpers/tree.js').Tree;
 
 var funcs = chars.funcs();
 var LETTERS = chars.LETTERS();
@@ -50,15 +51,20 @@ module.exports = createFuncDefs = function(stack, controller){
 function writeSetObject(tree, controller){
 	controller.setPreviousLength();
 	var members = tree.get('value');
+	var name = tree.get('name');
 	var memberNames = [], name;
 	for(var i = 0, l = members.length; i < l; i++){
 		var member = members[i];
+
 		if(helpers.getType(member) === 'number'){
 			memberNames.push(basicTypes.makeIntObject(member, controller));
+		
 		} else {
+		
 			member = helpers.trim(member);
 			if(controller.defined[member] && controller.defined[member].type === 'set'){
 				memberNames.push(controller.defined[member].name);
+		
 			} else {
 				memberNames.push(basicTypes.makeStringObject(member, controller));
 			}
@@ -67,12 +73,15 @@ function writeSetObject(tree, controller){
 	if(members.length !== 1){
 		var objectArrName = controller.variables.newVariable();
 		var unionName = controller.variables.newVariable();
+
 		controller.in_scope += 'struct Object *'+objectArrName+';\n';
-		controller.in_scope += ''+objectArrName+' = (struct Object *) malloc(sizeof(struct Object) * '+members.length+');\n';
+		controller.in_scope += ''+objectArrName+
+			' = (struct Object *) malloc(sizeof(struct Object) * '+
+			members.length+');\n';
+
 		for(var i = 0; i < members.length; i++){
 			controller.in_scope += objectArrName+'['+i+'] = '+memberNames[i]+';\n';	
 		}
-
 		controller.in_scope += 'union Data '+unionName+';\n'+unionName+'.oa = '+objectArrName+';\n';
 		var objectName = controller.variables.newVariable();
 		controller.in_scope += 'struct Object '+objectName+' = {\'o\','+members.length+','+unionName+'};\n';
@@ -80,9 +89,9 @@ function writeSetObject(tree, controller){
 	} else {
 		var objectName = memberNames[0];
 	}
-	controller.defined[tree.get('name')] = {name: objectName, type: 'set'};
+	controller.defined[name] = {name: objectName, type: 'set'};
 	controller.setCurrentLength();
-	controller.defined[tree.get('name')].definition = controller.getScopeChunk();
+	controller.defined[name].definition = controller.getScopeChunk();
 };
 
 function writeClassObject(tree, controller){
@@ -129,6 +138,7 @@ function writeCLASSFunc(tree, controller){
 	funcBody += 'union Data arr_union; arr_union.oa = obj_arr;\n';
 	funcBody += 'struct Object jed_obj = {\'o\','+iterator.length+',arr_union};\n';
 	funcBody += 'return jed_obj;\n}\n';
+
 	controller.pre_main += funcBody;
 }
 
@@ -161,11 +171,15 @@ function writeCustomFuncs(tree, definition, controller){
 	var result = controller.variables.newVariable();
 	funcBody += 'struct Object '+result+' = '+buildFunctions(tree, '', argNames, null, controller)+';\n';
 	funcBody += 'return '+result+';\n};\n';
-	controller.pre_main += head + controller.getScopeChunk() + funcBody;
+	controller.pre_main += 
+		head + 
+		controller.getScopeChunk() + 
+		funcBody;
 	controller.removeScopeChunk();
 };
 
 function writeREDCFunc(tree, controller){
+	controller.setPreviousLength();
 	// make iterator function
 	var funcData = tree.get('iterator').replace(/\(|\)/g,'').split(' ');
 	var funcName = funcData[0], funcElement = funcData[1];
@@ -193,6 +207,7 @@ function writeREDCFunc(tree, controller){
 };
 
 function writeARRYFunc(tree, controller){
+	controller.setPreviousLength();
 	var textControl = textControlFactory();
 	textControl.body = tree.get('iterator');
 	var mutator = parser(textControl, [], controller.defs)[0];
@@ -208,12 +223,14 @@ function writeARRYFunc(tree, controller){
 	funcBody += 'el = '+buildFunctions(mutator, '',['el'], null, controller)+';\n';
 	funcBody += 'result = append(el, result);\n';
 	funcBody += '}\nreturn result;\n};\n';
+
 	controller.defined[name] = {name: funcName, arguments: argNames, type:'function'};
 	controller.pre_main += head + controller.getScopeChunk() + funcBody;
 	controller.removeScopeChunk();
 }
 
 function writeFLTRFunc(tree, controller){
+	controller.setPreviousLength();
 	var textControl = textControlFactory();
 	textControl.body = tree.get('iterator');
 	var test = parser(textControl, [], controller.defs)[0];
@@ -226,12 +243,13 @@ function writeFLTRFunc(tree, controller){
 	funcBody += 'struct Object test = '+buildFunctions(test, '',['arr.dat.oa[i]'], null, controller)+';\n';
 	funcBody += 'if(test.dat.i == 1){\nobj = set_append(arr.dat.oa[i],obj);\n}\n}\n';
 	funcBody += 'return obj;\n}\n';
-	controller.defined[name] = {name: funcName, arguments: argNames, type:'function'};
+	controller.defined[name] = {name: funcName, arguments: argNames, type:'function'};	
 	controller.pre_main += head + controller.getScopeChunk() + funcBody;
 	controller.removeScopeChunk();
 }
 
 function writeEACHFunc(tree, controller){
+	controller.setPreviousLength();
 	var textControl = textControlFactory();
 	textControl.body = tree.get('iterator');
 	var iterator = parser(textControl, [], controller.defs)[0];
